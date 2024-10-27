@@ -1,4 +1,6 @@
+#include <EEPROM.h>
 #include <random_seed.h>
+
 #define RANDOM_SEED_PIN A1
 static RandomSeed<RANDOM_SEED_PIN> randomizer;
 
@@ -6,17 +8,30 @@ static RandomSeed<RANDOM_SEED_PIN> randomizer;
 #define LEDPIN 13
 #define US_ON 2000
 #define US_OFF 4000
-#define UK_ON 400
-#define UK_GAP 200
-#define UK_OFF 2000
-#define RAND_PERIOD 21600
-#define SAMPLE_TIME 1000
+#define SIG_ON 150
+#define SIG_OFF 150
+
 #define US_ON_PART_MIN 500
 #define US_ON_PART_MAX 2000
 #define MIN_TIMES 2
 #define MAX_TIMES 8
 #define BAUD 9600
-#define UK_RING_PROB 100
+#define SAMPLE_TIME 1000
+
+#define MODE_SLOW   0
+#define MODE_MEDIUM 1
+#define MODE_FAST   2
+#define MODE_DEMO 3
+#define MODE_FIRST 0
+#define MODE_LAST 3
+
+#define SLOW_PERIOD 21600
+#define MEDIUM_PERIOD 3600
+#define FAST_PERIOD 600
+#define DEMO_PERIOD 60
+
+int mode = MODE_FIRST;
+int period = SLOW_PERIOD;
 
 void ring_us(int times, int last_dur=0){
   for(int i = 0; i < times; i++){
@@ -36,77 +51,65 @@ void ring_us(int times, int last_dur=0){
   }
 }
 
-void ring_uk(int times){
+void ring_signal(int times){
   for(int i = 0; i < times; i++){
     digitalWrite(RINGPIN, HIGH);
-    delay(UK_ON);
+    delay(SIG_ON);
+
     digitalWrite(RINGPIN, LOW);
-
-    delay(UK_GAP);
-
-    digitalWrite(RINGPIN, HIGH);
-    delay(UK_ON);
-    digitalWrite(RINGPIN, LOW);
-
-    if(i < times-1)
-      delay(2000);
+    delay(SIG_OFF);
   }
 }
 
-void ring(int type, int times, int last_dur=0){
-  if(type == 1){
-    return ring_us(times, last_dur);
-  } else {
-    return ring_uk(times);
-  }
-}
-
-
-
+bool show_led = false;
 void loop() {
-  bool show_led = false;
-  int i = random(RAND_PERIOD);
-  // Serial.println(i);
+  int i = random(period);
   if(i == 0){
-    // int type = random(UK_RING_PROB + 1);
-    // if(type == 0){
-    //   type = 2;
-    // } else {
-    //   type = 1;
-    // }
-    int type = 1;
     int times = random(MIN_TIMES, MAX_TIMES + 1);
     int last_dur = random(US_ON_PART_MIN, US_ON_PART_MAX + 1);
-    Serial.print(times);
-    Serial.print(", ");
-    Serial.print(type);
-    Serial.print(", ");
-    Serial.println(last_dur);
-    ring(type, times, last_dur);
-    // show_led = !show_led;
-    // digitalWrite(LEDPIN, show_led ? HIGH : LOW);
+    ring_us(times, last_dur);
   } else {
-    show_led = !show_led;
-    digitalWrite(LEDPIN, show_led ? HIGH : LOW);
-    delay(SAMPLE_TIME / 2);
-    show_led = !show_led;
-    digitalWrite(LEDPIN, show_led ? HIGH : LOW);
-    delay(SAMPLE_TIME / 2);
+    delay(SAMPLE_TIME);
   }
+  show_led = !show_led;
+  digitalWrite(LEDPIN, show_led ? HIGH : LOW);
 }
-
-
 
 void setup() {
-  Serial.begin(BAUD);
-
   randomizer.randomize();
 
-  // put your setup code here, to run once:
-  pinMode(RINGPIN, OUTPUT);
   pinMode(LEDPIN, OUTPUT);
+  pinMode(RINGPIN, OUTPUT);
+  digitalWrite(LEDPIN, LOW);
   digitalWrite(RINGPIN, LOW);
 
- ring(2, 2);
-}
+  mode = EEPROM.read(0);
+  mode++;
 
+  if(mode < MODE_FIRST || mode > MODE_LAST){
+    mode = MODE_FIRST;
+  }
+  EEPROM.write(0, mode);
+
+  switch(mode){
+    case MODE_SLOW:
+      period = SLOW_PERIOD;
+      ring_signal(1);
+      break;
+    case MODE_MEDIUM:
+      period = MEDIUM_PERIOD;
+      ring_signal(2);
+      break;
+    case MODE_FAST:
+      period = FAST_PERIOD;
+      ring_signal(3);
+      break;
+    case MODE_DEMO:
+      period = DEMO_PERIOD;
+      ring_signal(4);
+      break;
+  }
+
+  delay(1000);
+  ring_us(1);
+}

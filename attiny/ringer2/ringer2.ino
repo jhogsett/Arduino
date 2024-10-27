@@ -30,8 +30,6 @@ static RandomSeed<RANDOM_SEED_PIN> randomizer;
 #define FAST_PERIOD 600
 #define DEMO_PERIOD 60
 
-// #define RAND_PERIOD 900
-
 int mode = MODE_FIRST;
 int period = SLOW_PERIOD;
 
@@ -80,7 +78,6 @@ void loop() {
 void setup() {
   randomizer.randomize();
 
-  // put your setup code here, to run once:
   pinMode(LEDPIN, OUTPUT);
   pinMode(RINGPIN, OUTPUT);
   digitalWrite(LEDPIN, LOW);
