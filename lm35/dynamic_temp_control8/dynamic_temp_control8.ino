@@ -1,3 +1,15 @@
+// pulsing the heater should be secondary to calculating the heater speed
+//   on sample(), process the heater pulsing
+//     when the current speed is zero, don't immediately turn off the heater
+//       when time to pulse the heater on, don't turn on if the speed is zero
+//     when the heater is on, the speed based time could change, but that change won't interfere 
+
+
+// reset heater on/off counters when switching from heating to cooling /etc
+
+// choose to expedite if the speed hasn't increased (not that the barrier has been reached)
+// if the speed decreases, cancel or reduce the expedite
+
 // might be good to reduce the expedite boost if the value starts picking up
 
 #include "value_controller.h"
@@ -10,43 +22,46 @@
 #define HEATER_PIN 10
 #define SENSOR_PIN A7
 
-#define COOLER_MAX 255
-#define COOLER_MIN 31
+#define COOLER_MAX 255 // maximum fan on voltage
+#define COOLER_MIN 31 // minimum fan on voltage
 #define COOLER_SPEED_STEPS 10
-#define COOLER_BOOST_TIME 20
-#define COOLER_EXP_BOOST 10000
+#define COOLER_BOOST_TIME 20 // when speeding up, set to max speed briefly
+#define COOLER_EXP_BOOST 40000 // boost speed to expedite cooling
 
-#define HEATER_MAX 192
-#define HEATER_MIN 32
+#define HEATER_MAX 8000 // maximum on time per power window
+#define HEATER_MIN 500 // minimum on time per power window
 #define HEATER_SPEED_STEPS 10
-#define HEATER_BOOST_TIME 0
-#define HEATER_EXP_BOOST 60000
+#define HEATER_OFF_TIME 1000 // mandatory off time
+#define HEATER_EXP_BOOST 90000
 
 #define FAN_OPEN_START 1000
 #define FAN_OPEN_DELAY 100
 #define FAN_OPEN_STEP 16
 
-#define COOLER_FAST_WINDOW 500
-#define COOLER_SLOW_WINDOW 5000
-#define COOLER_TREND_WINDOW 500
+#define COOLER_FAST_WINDOW 200
+#define COOLER_SLOW_WINDOW 2000
+#define COOLER_TREND_WINDOW 200
 #define COOLER_TREND_SENSE 0.25
 #define COOLER_SETTLED_WINDOW 0.25
 #define COOLER_TREND_BOOST 2
 
-#define HEATER_FAST_WINDOW 500
-#define HEATER_SLOW_WINDOW 5000
-#define HEATER_TREND_WINDOW 500
+#define HEATER_FAST_WINDOW 25
+#define HEATER_SLOW_WINDOW 250
+#define HEATER_TREND_WINDOW 25
 #define HEATER_TREND_SENSE 0.25
 #define HEATER_SETTLED_WINDOW 0.25
-#define HEATER_TREND_BOOST 0
+#define HEATER_TREND_BOOST 1
 
-#define COOLER_START_TEMP 80.0
-#define COOLER_MAX_TEMP 85.0
+#define TARGET_TEMP 130.0
+#define TARGET_RANGE 5.0
 
-#define HEATER_START_TEMP 80.0
-#define HEATER_MAX_TEMP 75.0
+#define COOLER_START_TEMP TARGET_TEMP
+#define COOLER_MAX_TEMP (TARGET_TEMP + TARGET_RANGE)
 
-#define REPORTING_FREQ 1000
+#define HEATER_START_TEMP TARGET_TEMP
+#define HEATER_MAX_TEMP (TARGET_TEMP - TARGET_RANGE)
+
+#define REPORTING_FREQ 2000
 
 ValueController *cooler_controller;
 ValueController *heater_controller;
@@ -122,7 +137,7 @@ void setup() {
     HEATER_MAX, 
     HEATER_MIN, 
     HEATER_SPEED_STEPS, 
-    HEATER_BOOST_TIME, 
+    HEATER_OFF_TIME, 
     HEATER_START_TEMP, 
     HEATER_MAX_TEMP, 
     HEATER_FAST_WINDOW, 
@@ -160,16 +175,16 @@ void loop() {
   if(++reporting_counter > REPORTING_FREQ){
     reporting_counter = 0;
 
-    Serial.print("cooler_speed:");
-    Serial.print(cooler_controller->_current_controller_speed_step * 10);
-    Serial.print(",");
     Serial.print("heater_speed:");
     Serial.print(heater_controller->_current_controller_speed_step * 10);
     Serial.print(",");
-    Serial.print("cooler_temp:");
-    Serial.print(cooler_controller->_trend_detector->fast_mean());
-    Serial.print(",");
     Serial.print("heater_temp:");
-    Serial.println(heater_controller->_trend_detector->fast_mean());
+    Serial.print(heater_controller->_trend_detector->fast_mean());
+    Serial.print(",");
+    Serial.print("cooler_speed:");
+    Serial.print(cooler_controller->_current_controller_speed_step * 10);
+    Serial.print(",");
+    Serial.print("cooler_temp:");
+    Serial.println(cooler_controller->_trend_detector->fast_mean());
   }
 }

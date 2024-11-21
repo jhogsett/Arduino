@@ -2,12 +2,12 @@
 
 class ValueController{
 public:
-  ValueController(bool controller_type, 
+  ValueController(int controller_type, 
                   int controller_pin, 
                   int controller_max, 
                   int controller_min, 
                   int controller_speed_steps, 
-                  int controller_boost_time, 
+                  int controller_special_time, 
                   float control_start, 
                   float control_max, 
                   int fast_window, 
@@ -22,8 +22,8 @@ public:
   void control(float sample);
   void control_up(float sample);
   void control_down(float sample);
-  static const bool UP_CONTROLLER=true;
-  static const bool DOWN_CONTROLLER=false;
+  static const int DOWN_CONTROLLER=0;
+  static const int UP_CONTROLLER=1;
   TrendDetector *_trend_detector;
   int _current_controller_speed_step;
    
@@ -31,7 +31,7 @@ private:
   int _current_controller_speed;
   bool _controller_status;
   int _controller_pin;
-  bool _controller_type;
+  int _controller_type;
   int _controller_max;
   int _controller_min;
   float _control_start;
@@ -39,24 +39,28 @@ private:
   int _control_boost_time;
   int _controller_speed_steps;
   int _controller_speed_step;
-  int _controller_boost_time;
+  int _controller_special_time;
   int _trend_boost;
   long _expedite_boost;
   float _control_range;
   long _expedite_boost_counter;
   int _expedite_boost_value;
+  bool _up_controller_state;
+  long _up_control_on_counter;
+  long _up_control_off_counter;
   
   void set_controller_off(void);
   void set_controller_speed(int speed);
+  void process_speed_value(int speed);
 };
 
 // type: false=down, true=up
-ValueController::ValueController(bool controller_type, 
+ValueController::ValueController(int controller_type, 
                                 int controller_pin, 
                                 int controller_max, 
                                 int controller_min, 
                                 int controller_speed_steps, 
-                                int controller_boost_time, 
+                                int controller_special_time, 
                                 float control_start, 
                                 float control_max, 
                                 int fast_window, 
@@ -72,17 +76,20 @@ ValueController::ValueController(bool controller_type,
   _controller_max = controller_max;
   _controller_min = controller_min;
   _controller_speed_steps = controller_speed_steps;
-  _controller_boost_time = controller_boost_time;
+  _controller_special_time = controller_special_time;
   _control_start = control_start;
   _control_max = control_max;
   _trend_boost = trend_boost;
   _expedite_boost = expedite_boost;
   _expedite_boost_counter = 0;
   _expedite_boost_value = 0;
+  _up_controller_state = false;
+  _up_control_on_counter = 0;
+  _up_control_off_counter = 0;
 
   if(_controller_type == UP_CONTROLLER)
     _control_range = _control_start - _control_max;
-  else
+  else if(_controller_type == DOWN_CONTROLLER)
     _control_range = _control_max - _control_start;
   _controller_speed_step = (int((_controller_max - _controller_min) / _controller_speed_steps));
  
@@ -95,10 +102,15 @@ void ValueController::set_controller_off(void){
   _current_controller_speed_step = 0;
 }
 
+// for controlling the value via analog voltage
 void ValueController::set_controller_speed(int speed){
   int prev_step = _current_controller_speed_step;
 
   if(speed != _current_controller_speed_step){
+    // reset the expedite boost counter if the speed has decreased
+    if(speed < _current_controller_speed_step){
+      _expedite_boost_counter = 0;
+    }
 
     if(speed <= 0){
       set_controller_off();
@@ -113,10 +125,55 @@ void ValueController::set_controller_speed(int speed){
       // if a down controller, if going up in speed, temporarily set to the maximum
       if(_controller_type == DOWN_CONTROLLER && _current_controller_speed_step > prev_step){
         analogWrite(_controller_pin, _controller_max);
-        delay(_controller_boost_time);
+        delay(_controller_special_time);
       }
       
       analogWrite(_controller_pin, _current_controller_speed);
+    }
+  }
+}
+
+// for controlling the value via pulsing
+void ValueController::process_speed_value(int speed){
+  int prev_step = _current_controller_speed_step;
+
+  if(speed != _current_controller_speed_step){
+    // reset the expedite boost counter if the speed has decreased
+    if(speed < _current_controller_speed_step){
+      _expedite_boost_counter = 0;
+    }
+  }
+  
+  if(speed <= 0){
+    set_controller_off();
+
+  } else {
+    if(speed > _controller_speed_steps)
+      speed = _controller_speed_steps;
+      
+    _current_controller_speed_step = speed;
+    _current_controller_speed = (speed * _controller_speed_step) + _controller_min;
+
+    if(_up_controller_state == true){
+      digitalWrite(_controller_pin, HIGH);       
+
+      if(++_up_control_on_counter >= _current_controller_speed){
+        // transition to off state
+        _up_controller_state = false;
+        _up_control_off_counter = 0;
+        _up_control_on_counter = 0;
+        digitalWrite(_controller_pin, LOW);       
+      }
+    } else {
+      digitalWrite(_controller_pin, LOW);       
+
+      if(++_up_control_off_counter >= _controller_special_time){
+        // transition to on state
+        _up_controller_state = true;
+        _up_control_off_counter = 0;
+        _up_control_on_counter = 0;
+        digitalWrite(_controller_pin, HIGH);       
+      }
     }
   }
 }
@@ -165,7 +222,8 @@ void ValueController::control_up(float sample){
     _expedite_boost_value = 0;
   }
 
-  set_controller_speed( int( under_boost + ( trend_boost ? _trend_boost : 0 ) + _expedite_boost_value ) );
+
+  process_speed_value(int( under_boost + ( trend_boost ? _trend_boost : 0 ) + _expedite_boost_value ) );
 }
 
 void ValueController::control_down(float sample){
