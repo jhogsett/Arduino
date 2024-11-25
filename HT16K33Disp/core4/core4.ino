@@ -19,8 +19,8 @@ void setup()
 //------------------------------------------------
 void loop()
 {
-  // disp.scroll_string("THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG. Please deposit 10 cents for the next 15 minutes.            FUCKFUCKFUCK");
-  // delay(1000);
+  disp.scroll_string("AM I A SCROLLING STRING?");
+  delay(1000);
 
   // int count = disp.string_length("This is a test.");
 
@@ -30,17 +30,17 @@ void loop()
   // disp.patterns_test();
   // delay(1000);
 
-  unsigned long count;
-  char buffer[13];
-  while(true){
-    //++count;
-    count = micros();
-    long seconds = count / 1000000;
-    long remainder = count - (seconds * 1000000);
-    sprintf(buffer, "%lu.%06lu00", seconds, remainder);  
-    disp.show_string(buffer, false, true);
+  // unsigned long count;
+  // char buffer[13];
+  // while(true){
+  //   //++count;
+  //   count = micros();
+  //   long seconds = count / 1000000;
+  //   long remainder = count - (seconds * 1000000);
+  //   sprintf(buffer, "%lu.%06lu00", seconds, remainder);  
+  //   disp.show_string(buffer, false, true);
     // disp.show_string(buffer, false, false);
-  }
+  // }
   
   // disp.scroll_string(buffer);
   // delay(1000); 
