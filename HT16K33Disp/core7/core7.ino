@@ -4,18 +4,20 @@
 #include <HT16K33Disp.h>
 #include "billboard.h"
 
-HT16K33Disp disp1(0x70, 3);
+HT16K33Disp disp1(0x70, 1);
 
 // HT16K33Disp disp2(0x71, 1);
 // HT16K33Disp disp3(0x72, 1);
 
 char bbstring1[50];
-char bbstring2[50];
-char bbstring3[50];
+// char bbstring2[50];
+// char bbstring3[50];
 
-Billboard billboard1(&disp1, bbstring1, 2);
-Billboard billboard2(&disp1, bbstring2, 1);
-Billboard billboard3(&disp1, bbstring3, 10);
+Billboard billboard1(&disp1, bbstring1, 10);
+Billboard billboard2(&disp1, bbstring1, 1);
+Billboard billboard3(&disp1, bbstring1, 1);
+Billboard billboard4(&disp1, bbstring1, 1);
+Billboard billboard5(&disp1, bbstring1, 1);
 
 void setup(){
   byte brightness1[3] = {1, 8, 15};
@@ -38,15 +40,16 @@ void setup(){
 #define PRICE_DOWN_TIME 250
 #define PRICE_DOWN_AMT 0.01
 #define PRICE_DOWN_MIN 25
+#define PRICE_MAX 999
 
-#define TEMPLATE1 "*** ENJOY DELICIOUS CANDY %s ***"
-#define TEMPLATE2 "---> %s For a handful of candy <---"
-#define TEMPLATE3 "%s"
+#define TEMPLATE1 "%s"
+#define TEMPLATE2 "SWEETEN YOUR DAY %s"
+#define TEMPLATE3 "INDULGE YOUR CRAVINGS %s"
+#define TEMPLATE4 "BITE-SIZE BLISS %s"
+#define TEMPLATE5 "SWEET DREAMS START HERE %s"
 
 int _price = 0;
 unsigned long _next_price_down = 0;
-
-  // dtostrf(purse_f, 4, 2, buf2);
 
 void format_price(int price, char *buffer){
   int dollars = price / 100;
@@ -105,7 +108,7 @@ void loop()
   unsigned long time = millis();
 
   if(!_price){
-    begin_price_down(2500);
+    begin_price_down(PRICE_MAX);
     update_price();
     update_price_template();
   }
@@ -121,7 +124,6 @@ void loop()
         n_billboard = 2;
         current_billboard = &billboard2;
         current_template = TEMPLATE2;
-        current_buffer = bbstring2;
         update_price_template();
         break;
 
@@ -129,15 +131,27 @@ void loop()
         n_billboard = 3;
         current_billboard = &billboard3;
         current_template = TEMPLATE3;
-        current_buffer = bbstring3;
         update_price_template();
         break;
 
       case 3:
+        n_billboard = 4;
+        current_billboard = &billboard4;
+        current_template = TEMPLATE4;
+        update_price_template();
+        break;
+
+      case 4:
+        n_billboard = 5;
+        current_billboard = &billboard5;
+        current_template = TEMPLATE5;
+        update_price_template();
+        break;
+
+      case 5:
         n_billboard = 1;
         current_billboard = &billboard1;
         current_template = TEMPLATE1;
-        current_buffer = bbstring1;
         update_price_template();
         break;
     }
