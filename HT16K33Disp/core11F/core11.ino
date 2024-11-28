@@ -9,7 +9,7 @@ HT16K33Disp disp1(0x70, 1);
 // HT16K33Disp disp2(0x71, 1);
 // HT16K33Disp disp3(0x72, 1);
 
-#define BILLBOARD_BUFFER 60
+#define DISPLAY_BUFFER 60
 #define PRICE_BUFFER 7
 #define NUM_BILLBOARDS 5
 
@@ -20,17 +20,17 @@ HT16K33Disp disp1(0x70, 1);
 
 #define BLANKING_TIME 1000
 
-char billboard_buffer[BILLBOARD_BUFFER];
+char display_buffer[DISPLAY_BUFFER];
 
 char current_price[PRICE_BUFFER];
 
-Billboard billboards[NUM_BILLBOARDS] = {
-  Billboard(&disp1, billboard_buffer, 10),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1)
-};
+// Billboard billboards[NUM_BILLBOARDS] = {
+//   Billboard(&disp1, display_buffer, 10),
+//   Billboard(&disp1, display_buffer, 1),
+//   Billboard(&disp1, display_buffer, 1),
+//   Billboard(&disp1, display_buffer, 1),
+//   Billboard(&disp1, display_buffer, 1)
+// };
 
 const char template0[] PROGMEM = "%s"; 
 const char template1[] PROGMEM = "    SWEETEN YOUR DAY only %s    "; 
@@ -40,7 +40,7 @@ const char template4[] PROGMEM = "    SWEET DREAMS START HERE only %s    ";
 const char *const templates[] PROGMEM = {template0, template1, template2, template3, template4};
 
 PriceHandler price_handler(current_price, PRICE_DOWN_TIME, PRICE_DOWN_STEP, PRICE_MIN);
-BillboardsHandler billboards_handler(billboard_buffer, NUM_BILLBOARDS, billboards, templates, BLANKING_TIME);
+BillboardsHandler billboards_handler(&disp1, display_buffer, NUM_BILLBOARDS, templates, 10, BLANKING_TIME);
 
 // bool running = false;
 // char *current_template = NULL;
@@ -75,7 +75,7 @@ void setup() {
 }
 
 // void update_billboard() {
-//   sprintf_P(billboard_buffer, (char *)pgm_read_ptr(&(templates[n_current_billboard])), current_price);
+//   sprintf_P(display_buffer, (char *)pgm_read_ptr(&(templates[n_current_billboard])), current_price);
 // }
 
 void loop() {
@@ -83,10 +83,10 @@ void loop() {
 
   if(price_handler.step()){
     price_handler.refresh_price();      
-    billboards_handler.update_billboard(current_price);
+    billboards_handler.update_buffer(current_price);
   }
 
-  billboards_handler.run(time, &disp1, current_price);  
+  billboards_handler.run(time, current_price);  
 
   // // current billboard just finished, time to blank
   // if (!running && !blanking) {

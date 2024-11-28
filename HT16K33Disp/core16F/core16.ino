@@ -19,17 +19,18 @@ HT16K33Disp disp1(0x70, 1);
 #define PRICE_MAX 995
 
 #define BLANKING_TIME 1000
+#define HOME_TIMES 10
 
 char billboard_buffer[BILLBOARD_BUFFER];
 
 char current_price[PRICE_BUFFER];
 
 Billboard billboards[NUM_BILLBOARDS] = {
-  Billboard(&disp1, billboard_buffer, 10),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1),
-  Billboard(&disp1, billboard_buffer, 1)
+  Billboard(&disp1, billboard_buffer),
+  Billboard(&disp1, billboard_buffer),
+  Billboard(&disp1, billboard_buffer),
+  Billboard(&disp1, billboard_buffer),
+  Billboard(&disp1, billboard_buffer)
 };
 
 const char template0[] PROGMEM = "%s"; 
@@ -40,15 +41,7 @@ const char template4[] PROGMEM = "    SWEET DREAMS START HERE only %s    ";
 const char *const templates[] PROGMEM = {template0, template1, template2, template3, template4};
 
 PriceHandler price_handler(current_price, PRICE_DOWN_TIME, PRICE_DOWN_STEP, PRICE_MIN);
-BillboardsHandler billboards_handler(billboard_buffer, NUM_BILLBOARDS, billboards, templates, BLANKING_TIME);
-
-// bool running = false;
-// char *current_template = NULL;
-// Billboard *current_billboard = NULL;
-// byte n_current_billboard = 0;
-// bool showing_home = false;
-// bool blanking = false;
-// unsigned long blanking_until;
+BillboardsHandler billboards_handler(billboard_buffer, NUM_BILLBOARDS, billboards, templates, BLANKING_TIME, HOME_TIMES);
 
 void setup() {  
   Serial.begin(115200);
@@ -74,10 +67,6 @@ void setup() {
   price_handler.refresh_price();      
 }
 
-// void update_billboard() {
-//   sprintf_P(billboard_buffer, (char *)pgm_read_ptr(&(templates[n_current_billboard])), current_price);
-// }
-
 void loop() {
   unsigned long time = millis();
 
@@ -87,37 +76,4 @@ void loop() {
   }
 
   billboards_handler.run(time, &disp1, current_price);  
-
-  // // current billboard just finished, time to blank
-  // if (!running && !blanking) {
-  //   disp1.clear();
-  //   blanking = true;
-  //   blanking_until = time + BLANKING_TIME;
-  //   return;
-  // }
-
-  // // process end of blanking
-  // if(blanking) {
-  //   if (time > blanking_until)
-  //     blanking = false;
-  //   else
-  //     return;
-  // }
-
-  // // process start of new billboard
-  // if (!running) {
-  //   if (!showing_home) {
-  //     showing_home = true;
-  //     n_current_billboard = 0;
-  //   } else {
-  //     showing_home = false;
-  //     n_current_billboard = random(1, NUM_BILLBOARDS);
-  //   }
-
-  //   current_billboard = &billboards[n_current_billboard];
-  //   update_billboard();
-  //   current_billboard->begin();
-  // }
-
-  // running = current_billboard->step();
 }

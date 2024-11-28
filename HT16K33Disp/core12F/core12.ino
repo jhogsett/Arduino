@@ -25,7 +25,7 @@ char billboard_buffer[BILLBOARD_BUFFER];
 char current_price[PRICE_BUFFER];
 
 Billboard billboards[NUM_BILLBOARDS] = {
-  Billboard(&disp1, billboard_buffer, 10),
+  Billboard(&disp1, billboard_buffer, 3),
   Billboard(&disp1, billboard_buffer, 1),
   Billboard(&disp1, billboard_buffer, 1),
   Billboard(&disp1, billboard_buffer, 1),
