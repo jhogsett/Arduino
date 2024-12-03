@@ -10,6 +10,7 @@ public:
   void refresh_price();
   void boost_price(byte factor, int price_max);
   void format_price(int price, char *buffer);
+  int price();
   
 private:
   char * _buffer;  
@@ -55,6 +56,10 @@ void PriceHandler::boost_price(byte factor, int price_max){
   _price = _price * factor;
   if(_price > price_max)
     _price = price_max;
+}
+
+int PriceHandler::price(){
+  return _price;
 }
 
 void PriceHandler::format_price(int price, char *buffer) {

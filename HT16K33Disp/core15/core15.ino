@@ -16,13 +16,13 @@ HT16K33Disp disp1(0x70, 1);
 #define PRICE_BUFFER 7
 #define NUM_BILLBOARDS 5
 
-#define PRICE_DOWN_TIME 333
-#define PRICE_DOWN_STEP 10
+#define PRICE_DOWN_TIME 60000
+#define PRICE_DOWN_STEP 5
 #define PRICE_MIN 25
 #define PRICE_MAX 995
 
 #define BLANKING_TIME 1000
-#define HOME_TIMES 10
+#define HOME_TIMES 60
 
 char billboard_buffer[BILLBOARD_BUFFER];
 
@@ -59,15 +59,24 @@ void setup() {
 
   delay(1000);
 
-    // price_handler.begin(PRICE_MIN);
-  price_handler.begin(PRICE_MAX);
+  price_handler.begin(PRICE_MIN);
+  // price_handler.begin(PRICE_MAX);
   price_handler.refresh_price();      
-
   billboards_handler.update_buffer(current_price);
 }
 
+bool boost=true;
+
 void loop() {
   unsigned long time = millis();
+
+  if(boost){
+    price_handler.boost_price(2, PRICE_MAX);
+    // begin(PRICE_MAX);
+    price_handler.refresh_price();      
+    billboards_handler.update_buffer(current_price);
+    boost = false;
+  }
 
   if(price_handler.step()){
     price_handler.refresh_price();      

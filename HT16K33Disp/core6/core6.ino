@@ -12,7 +12,7 @@ HT16K33Disp disp1(0x70, 3);
 //------------------------------------------------
 void setup()
 {
-  byte brightness1[3] = {1, 8, 15};
+  byte brightness1[3] = {1, 9, 15};
   // byte brightness2[1] = {8};
   // byte brightness3[1] = {15};
 
@@ -32,7 +32,7 @@ void setup()
 #define PRICE_DOWN_TIME 1000
 #define PRICE_DOWN_FACTOR 0.99
 #define PRICE_DOWN_MIN 25
-#define TEMPLATE "ENJOY CANDY ONLY %s "
+#define TEMPLATE "PLAY THE REACTION TIME GAME            "
 
 int _price = 0;
 unsigned long _next_price_down = 0;
@@ -99,5 +99,5 @@ void loop()
   if(!running1)
     disp1.begin_scroll_string(buffer);
 
-  running1 = disp1.step_scroll_string();
+  running1 = disp1.step_scroll_string(time);
 }
