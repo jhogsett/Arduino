@@ -82,18 +82,12 @@ void LEDHandler::begin(unsigned long time, byte style, int show_time=0, int blan
 }
 
 void LEDHandler::deactivate_led(byte virtual_pin, bool mirror=false){
-  // Serial.print("dl ");
-  // Serial.println(virtual_pin + _first_pin);
-
   digitalWrite(virtual_pin + _first_pin, LOW);
   if(mirror)
     deactivate_led(virtual_pin + (_num_leds / 2));
 }
 
 void LEDHandler::activate_led(byte virtual_pin, bool mirror=false){
-  // Serial.print("al ");
-  // Serial.println(virtual_pin + _first_pin);
-
   if(_intensity[virtual_pin] == 0)
     digitalWrite(virtual_pin + _first_pin, HIGH);
   else
