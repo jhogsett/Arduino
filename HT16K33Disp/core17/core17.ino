@@ -51,9 +51,9 @@ void setup() {
 
   Wire.begin();
 
-  disp1.Init(brightness1);
-  disp2.Init(brightness2);
-  disp3.Init(brightness3);
+  disp1.init(brightness1);
+  disp2.init(brightness2);
+  disp3.init(brightness3);
 
   delay(1000);
 
@@ -99,13 +99,13 @@ void loop() {
     // disp3.scroll_string("TEST1234", 100, 100);
 
     if(!running1)
-      disp1.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 100, 100);
+      disp1.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 33, 33);
 
     if(!running2)
-      disp2.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 100, 100);
+      disp2.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 33, 33);
 
     if(!running3)
-      disp3.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 100, 100);
+      disp3.begin_scroll_string("    SHIT    FUCK    PISS    DAMN    FART    POOP    ", 33, 33);
 
     running1 = disp1.step_scroll_string(time);
     running2 = disp2.step_scroll_string(time);

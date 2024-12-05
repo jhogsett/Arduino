@@ -11,7 +11,7 @@ public:
   void step(unsigned long time);
 
   void activate_leds(bool *states, bool mirror=false);
-  void activate_leds(bool state, bool mirror=false);
+  void activate_all(bool state, bool mirror=false);
   void deactivate_leds(bool mirror=false);
   void flash_leds(bool mirror=false, long time=0);
 
@@ -143,7 +143,7 @@ void LEDHandler::activate_leds(bool *states, bool mirror=false){
 }
 
 // turn all on or off
-void LEDHandler::activate_leds(bool state, bool mirror=false){
+void LEDHandler::activate_all(bool state, bool mirror=false){
   byte effective_pins = mirror ? (_num_leds / 2) : _num_leds;
   for(byte virtual_pin = 0; virtual_pin < effective_pins; virtual_pin++){
     if(state)

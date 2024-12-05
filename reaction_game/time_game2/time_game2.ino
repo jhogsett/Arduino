@@ -76,7 +76,7 @@ char billboard_buffer[BILLBOARD_BUFFER];
 
 #define NUM_BILLBOARDS 2
 const char template0[] PROGMEM = "InfinityGame"; 
-const char template1[] PROGMEM = "PRESS ANY BUTTON TO START            "; 
+const char template1[] PROGMEM = "Press A Button To Start"; 
 const char *const templates[] PROGMEM = {template0, template1};
 
 BillboardsHandler billboards_handler(billboard_buffer, NUM_BILLBOARDS, templates, BLANKING_TIME, HOME_TIMES);
@@ -503,11 +503,11 @@ void time_mode(){
   unsigned long mean = 0;
 
   for(byte i = 0; i < ROUNDS; i++){
-    button_leds.activate_leds(true);
+    button_leds.activate_all(true);
     display.scroll_string(load_f_string(F("Press on FLASH")));
     delay(ROUND_DELAY);
     display.clear();
-    button_leds.activate_leds(false);
+    button_leds.activate_all(false);
     // while(prompt(load_f_string(F("PRESS on FLASH"))) == -1);
 
     int del = random(MIN_DELAY, MAX_DELAY+1);
