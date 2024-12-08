@@ -118,7 +118,7 @@ void setup_buttons(){
 }
 
 void setup(){
-  // Serial.begin(115200);
+  Serial.begin(115200);
   randomizer.randomize();
  
   setup_leds();
@@ -259,9 +259,15 @@ int prompt(char *prompt){
 // prompt with text showing, no cycle waiting for a response
 // but cancelable with a button press
 bool title_prompt(char *title, byte times=1){
+  // Serial.print("1");
   all_leds.deactivate_leds(true);
+
+  // Serial.print("2");
   display.begin_scroll_loop(times);
+
+  // Serial.print("3");
   while(display.loop_scroll_string(millis(), title)){
+    // Serial.print("4");
     if(button_pressed()){
       break;
     }
@@ -333,22 +339,23 @@ static const char *bad_words[NUM_BAD_WORDS] = {"FUCK", "SHIT", "CUNT", "COCK", "
 byte choice1, choice2, choice3;
 
 long purse = 1000;
-#define WIN_TRIPLE 1000
-#define WIN_DOUBLE 100
-#define WIN_WORD  10
+#define WIN_TRIPLE 100
+#define WIN_DOUBLE 10
+#define WIN_WORD  2
 #define WIN_WORD_CUTOFF 1
-#define WIN_WORDS  5
+#define WIN_WORDS  1
 #define WIN_WORDS_CUTOFF 6
 #define DEFAULT_BET 10
 
-void slots_round(){
-  choice1 = random(NUM_BAD_WORDS);
-  choice2 = random(NUM_BAD_WORDS);
-  choice3 = random(NUM_BAD_WORDS);
+#define NUM_BET_AMOUNTS 3
+static const byte bet_amounts[] = { 10, 25, 50 };
+byte current_bet = 0;
 
-  disp1.begin_scroll_loop(2);
-  disp2.begin_scroll_loop(3);
-  disp3.begin_scroll_loop(4);
+
+void dirty_slots_round(){
+  disp1.begin_scroll_loop(1);
+  disp2.begin_scroll_loop(2);
+  disp3.begin_scroll_loop(3);
 
   char * text = load_f_string(F("    FUCK  SHIT  CUNT  COCK  PISS  TITS  FART  POOP  DICK  GOSH"));
 
@@ -361,6 +368,7 @@ void slots_round(){
     if(running1){
       running1 = disp1.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running1){
+        choice1 = random(NUM_BAD_WORDS);
         disp1.show_string(bad_words[choice1]);
       }
     }
@@ -368,6 +376,7 @@ void slots_round(){
     if(running2){
       running2 = disp2.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running2){
+        choice2 = random(NUM_BAD_WORDS);
         disp2.show_string(bad_words[choice2]);
       }
     }
@@ -375,6 +384,7 @@ void slots_round(){
     if(running3){
       running3 = disp3.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running3){
+        choice3 = random(NUM_BAD_WORDS);
         disp3.show_string(bad_words[choice3]);
       }
     }
@@ -386,8 +396,10 @@ void slots_game(){
   unsigned long time;
   while(prompt(load_f_string(F("Dirty Slots"))) == -1);
 
+  // sprintf(buffer, load_f_string(F("Bet $%d Back")), bet_amounts[current_bet]);
   while((time = millis()) < sleep_timeout){
-    switch(prompt(load_f_string(F("Bet $10 Back")))){
+    sprintf(buffer, load_f_string(F("Bet $%d Back")), bet_amounts[current_bet]);
+    switch(prompt(buffer)){
       case -1:
         return;
       case 0:
@@ -395,20 +407,21 @@ void slots_game(){
       case 1:
         break;
       case 2:
-        break;
+        current_bet++;
+        if(current_bet >= NUM_BET_AMOUNTS)
+          current_bet = 0;
+        sprintf(buffer, load_f_string(F("Bet $%d Back")), bet_amounts[current_bet]);
+        continue;
       case 3:
         return;
     }
 
     int win = 0;
-    purse -= DEFAULT_BET;
+    purse -= bet_amounts[current_bet];
 
-    slots_round();  
+    dirty_slots_round();  
 
     while(button_pressed());
-
-    // delay(ROUND_DELAY);
-    // display.clear();
 
     sprintf(buffer, "%s%s%s", bad_words[choice1], bad_words[choice2], bad_words[choice3]);
     title_prompt(buffer);
@@ -421,24 +434,23 @@ void slots_game(){
       win = WIN_WORD;
     } else if(choice1 < WIN_WORDS_CUTOFF || choice2 < WIN_WORDS_CUTOFF ||choice3 < WIN_WORDS_CUTOFF) {
       win = WIN_WORDS;
-    } else {
-      win = 0;      
-    }  
-
-    if(win){
-      sprintf(buffer, "YOU WIN $%d", win);
-      title_prompt(buffer);
-      delay(ROUND_DELAY);
-    } else {
-      title_prompt(load_f_string(F("You Lose - Try Again")));
-      delay(ROUND_DELAY);
     }
 
-    purse += win;
-    sprintf(buffer, "PURSE $%d", purse);
-    title_prompt(buffer);
+    win *= bet_amounts[current_bet];
+
+    if(win){
+      sprintf(buffer, "WIN *$%d*", win);
+      title_prompt(buffer);
+    } else {
+      title_prompt(load_f_string(F("LOSE Try Again")));
+    }
     delay(ROUND_DELAY);
 
+    purse += win;
+
+    sprintf(buffer, "CASH $%ld", purse);
+    title_prompt(buffer);
+    delay(ROUND_DELAY);
     }
 }
 // time game specific
@@ -483,7 +495,7 @@ void time_game(){
     mean += reaction_time;    
 
     micros_to_ms(copy_buffer, reaction_time);
-    sprintf(buffer, "Time %s ms", copy_buffer);
+    sprintf(buffer, "%s ms", copy_buffer);
     display.scroll_string(buffer);
     delay(ROUND_DELAY);
     display.clear();
@@ -493,14 +505,14 @@ void time_game(){
 
   mean /= ROUNDS;
   micros_to_ms(copy_buffer, mean);
-  sprintf(buffer, "AVG Time %s ms", copy_buffer);
+  sprintf(buffer, "AVERAGE %s ms", copy_buffer);
   title_prompt(buffer);
   delay(ROUND_DELAY);
 
   if(mean < best_mean){
     best_mean = mean;
     micros_to_ms(copy_buffer, mean);
-    sprintf(buffer, "* NEW BEST! %s ms", copy_buffer);
+    sprintf(buffer, "* NEW BEST %s ms", copy_buffer);
   } else {
     micros_to_ms(copy_buffer, best_mean);
     sprintf(buffer, "* Best Time %s ms", copy_buffer);

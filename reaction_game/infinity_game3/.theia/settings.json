@@ -1,0 +1,19 @@
+{
+  "editor.trimAutoWhitespace": false,
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.acceptSuggestionOnEnter": "off",
+  "editor.autoClosingBrackets": "languageDefined",
+  "editor.autoClosingDelete": "never",
+  "editor.autoClosingOvertype": "never",
+  "editor.autoClosingQuotes": "never",
+  "editor.autoIndent": "full",
+  "editor.autoSurround": "never",
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.wordBasedSuggestions": false,
+  "files.autoSave": "onWindowChange",
+  "editor.inlineSuggest.enabled": false,
+  "explorer.autoReveal": false,
+  "problems.autoReveal": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.bracketPairColorization.independentColorPoolPerBracketType": true
+}

@@ -1,0 +1,17 @@
+{
+  "editor.trimAutoWhitespace": false,
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.acceptSuggestionOnEnter": "off",
+  "editor.autoClosingBrackets": "never",
+  "editor.autoClosingDelete": "never",
+  "editor.autoClosingOvertype": "never",
+  "editor.autoClosingQuotes": "never",
+  "editor.autoIndent": "none",
+  "editor.autoSurround": "never",
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.wordBasedSuggestions": false,
+  "files.autoSave": "onWindowChange",
+  "editor.inlineSuggest.enabled": false,
+  "explorer.autoReveal": false,
+  "problems.autoReveal": false
+}

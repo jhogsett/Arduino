@@ -46,28 +46,35 @@ static RandomSeed<RANDOM_SEED_PIN> randomizer;
 #define DEFAULT_BLANK_TIME 500
 #define DEFAULT_SHOW_TIME 500
 
-#define SCROLL_SHOW 750
-#define SCROLL_DELAY 100
-
-#define DEBOUNCE_TIME 7
+#define DEBOUNCE_TIME 5
 #define LONG_PRESS_TIME 2000
 #define PROMPT_TIMEOUT 30000
 #define SLEEP_TIMEOUT 900000
 
-#define DISPLAY_BUFFER 101
+#define OPTION_FLIP_SCROLL_TIME 100
+
+#define DISPLAY_BUFFER 71
+#define FSTRING_BUFFER 71
+// #define COPY_BUFFER 71
 #define INT_BUFFER 13
-char buffer[DISPLAY_BUFFER];
-char copy_buffer[DISPLAY_BUFFER];
+
+#define DISPLAY_SHOW_TIME   600
+#define DISPLAY_SCROLL_TIME 90
+
+char display_buffer[DISPLAY_BUFFER];
+char fstring_buffer[FSTRING_BUFFER];
+// char copy_buffer[COPY_BUFFER];
+char int_buffer[INT_BUFFER];
 
 #define NUM_BILLBOARDS 3
 const char template0[] PROGMEM = "InfinityGame"; 
-const char template1[] PROGMEM = "Press A Button To Start"; 
-const char template2[] PROGMEM = "Long Press for Options"; 
+const char template1[] PROGMEM = "Press A Button To START"; 
+const char template2[] PROGMEM = "Long Press for OPTIONS"; 
 const char *const templates[] PROGMEM = {template0, template1, template2};
 
-#define BLANKING_TIME 750
-#define HOME_TIMES 3
-BillboardsHandler billboards_handler(buffer, NUM_BILLBOARDS, templates, BLANKING_TIME, HOME_TIMES);
+#define BLANKING_TIME 600
+#define HOME_TIMES 5
+BillboardsHandler billboards_handler(display_buffer, NUM_BILLBOARDS, templates, BLANKING_TIME, HOME_TIMES, false, DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);
 
 volatile bool button_states[NUM_BUTTONS];
 volatile unsigned long press_time;
@@ -86,7 +93,7 @@ LEDHandler button_leds(FIRST_BUTTON_LED, 3, led_intensities);
 
 char * load_f_string(const __FlashStringHelper* f_string){
   const char *p = (const char PROGMEM *)f_string;
-  return strcpy_P(copy_buffer, p);
+  return strcpy_P(fstring_buffer, p);
 }
 
 void setup_display(){
@@ -150,7 +157,8 @@ bool button_pressed(){
   // if the button is unpressed during this time, cancel the press
   // this depends on being called immediately after the ISR has recorded a press, 
   //   ie. in a loop
-  while(millis() < press_time + DEBOUNCE_TIME){
+  unsigned long debounce_timeout =  press_time + DEBOUNCE_TIME;
+  while(millis() < debounce_timeout){
     if(!digitalRead(ANY_BUTTON)){
       button_states[ANY_COLOR_ID] = false;
       return false;
@@ -202,6 +210,7 @@ int billboard_prompt(){
   unsigned long sleep_timeout = millis() + SLEEP_TIMEOUT;
   unsigned long time;
 
+  all_leds.deactivate_leds(true);
   billboards_handler.reset();
   panel_leds.begin(time, LEDHandler::STYLE_RANDOM, 750, 350);
   while((time = millis()) < sleep_timeout){
@@ -225,14 +234,17 @@ int billboard_prompt(){
 
 // prompt with text and cycle waiting for a button response
 // returns -1=timed out, 0=long press, button ID otherwise
-int prompt(char *prompt){
+int button_led_prompt(char *prompt, bool *states=NULL){
   unsigned long time;
   unsigned long timeout_time = millis() + PROMPT_TIMEOUT;
 
   all_leds.deactivate_leds(true);
+  if(states)
+    button_leds.activate_leds(states);
+
   display.begin_scroll_loop();
   while((time = millis()) < timeout_time){
-    display.loop_scroll_string(time, prompt);    
+    display.loop_scroll_string(time, prompt, DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);    
 
     if(button_pressed()){
       all_leds.activate_leds(button_states, true);
@@ -252,6 +264,10 @@ int prompt(char *prompt){
           return RED_ID;
       }
     }
+    // restore button leds in case of debounce time failure
+    if(states)
+      button_leds.activate_leds(states);
+
   }
   return -1;
 }
@@ -261,7 +277,7 @@ int prompt(char *prompt){
 bool title_prompt(char *title, byte times=1){
   all_leds.deactivate_leds(true);
   display.begin_scroll_loop(times);
-  while(display.loop_scroll_string(millis(), title)){
+  while(display.loop_scroll_string(millis(), title, DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME)){
     if(button_pressed()){
       break;
     }
@@ -296,15 +312,44 @@ void sleep_mode(){
   while(panel_led_prompt() == -1);
 }
 
+bool option_sound = false;
+bool option_vibrate = false;
+
+// void option_prompt(
+
 void options_menu(){
   title_prompt(load_f_string(F("* MENU")));
-  while(prompt(load_f_string(F("SOUND   OFF"))) == -1);
-  while(prompt(load_f_string(F("VIBRATE OFF"))) == -1);
+
+  // sprintf(display_buffer, load_f_string(F("SOUND   %s")), bet_amounts[current_bet]);
+  // while(button_led_prompt(load_f_string(F("SOUND   OFF"))) == -1);
+  //   sprintf(display_buffer, load_f_string(F("Bet $%d Back")), bet_amounts[current_bet]);
+  //   bool states[] = {false, true, false, false};
+  //   switch(button_led_prompt(display_buffer, states)){
+  //     case -1:
+  //       return;
+  //     case 0:
+  //       return;
+  //     case 1:
+  //       break;
+  //     case 2:
+  //       current_bet++;
+  //       if(current_bet >= NUM_BET_AMOUNTS)
+  //         current_bet = 0;
+  //       sprintf(display_buffer, load_f_string(F("    $%d")), bet_amounts[current_bet]);
+  //       disp2.scroll_string(display_buffer, 1, OPTION_FLIP_SCROLL_TIME);
+  //       continue;
+  //     case 3:
+  //       return;
+  //   }
+
+  while(button_led_prompt(load_f_string(F("SOUND   OFF"))) == -1);
+
+  while(button_led_prompt(load_f_string(F("VIBRATE OFF"))) == -1);
 }
 
 void options_mode(){
   title_prompt(load_f_string(F("* OPTIONS")));
-  switch(prompt(load_f_string(F("Sleep   Menu")))){
+  switch(button_led_prompt(load_f_string(F("Zzz     Menu")))){
     case -1:
       return;
     case 0:
@@ -328,29 +373,76 @@ void options_mode(){
 #define SLOTS_SHOW_TIME   20
 #define SLOTS_SCROLL_TIME 20
 
-#define NUM_BAD_WORDS 10
-static const char *bad_words[NUM_BAD_WORDS] = {"FUCK", "SHIT", "CUNT", "COCK", "PISS", "TITS", "FART", "POOP", "DICK", "GOSH"};
+// #define USE_PROGMEM
+
+#define NUM_WORDS 10
+#ifdef USE_PROGMEM
+const char rude0[] PROGMEM = "FUCK";
+const char rude1[] PROGMEM = "SHIT";
+const char rude2[] PROGMEM = "CUNT";
+const char rude3[] PROGMEM = "COCK";
+const char rude4[] PROGMEM = "PISS";
+const char rude5[] PROGMEM = "TITS";
+const char rude6[] PROGMEM = "FART";
+const char rude7[] PROGMEM = "POOP";
+const char rude8[] PROGMEM = "DICK";
+const char rude9[] PROGMEM = "GOSH";
+const char *const rude_words[] PROGMEM = {rude0, rude1, rude2, rude3, rude4, rude5, rude6, rude7, rude8, rude9};
+
+const char nice0[] PROGMEM = "WEED";
+const char nice1[] PROGMEM = "VAPE";
+const char nice2[] PROGMEM = "BEER";
+const char nice3[] PROGMEM = "WINE";
+const char nice4[] PROGMEM = "CASH";
+const char nice5[] PROGMEM = "GOLD";
+const char nice6[] PROGMEM = "MINT";
+const char nice7[] PROGMEM = "GIFT";
+const char nice8[] PROGMEM = "NUTE";
+const char nice9[] PROGMEM = "MAYO";
+const char *const nice_words[] PROGMEM = {nice0, nice1, nice2, nice3, nice4, nice5, nice6, nice7, nice8, nice9};
+#else
+static const char *rude_words[NUM_WORDS] = {"FUCK", "SHIT", "CUNT", "COCK", "PISS", "TITS", "FART", "POOP", "DICK", "BOOB"};
+static const char *nice_words[NUM_WORDS] = {"WEED", "VAPE", "BEER", "WINE", "TACO", "GOLD", "MINT", "GIFT", "JADE", "CAKE"};
+#endif
 byte choice1, choice2, choice3;
 
+
+
 long purse = 1000;
-#define WIN_TRIPLE 1000
-#define WIN_DOUBLE 100
-#define WIN_WORD  10
+#define WIN_TRIPLE 10
+#define WIN_DOUBLE 5
+#define WIN_WORD  1
 #define WIN_WORD_CUTOFF 1
-#define WIN_WORDS  5
+#define WIN_WORDS  1
 #define WIN_WORDS_CUTOFF 6
 #define DEFAULT_BET 10
 
-void slots_round(){
-  choice1 = random(NUM_BAD_WORDS);
-  choice2 = random(NUM_BAD_WORDS);
-  choice3 = random(NUM_BAD_WORDS);
+#define NUM_BET_AMOUNTS 4
+#define BET_ALL 3
+int bet_amounts[] = { 10, 25, 50, 0 };
+byte current_bet = 0;
 
-  disp1.begin_scroll_loop(2);
-  disp2.begin_scroll_loop(3);
-  disp3.begin_scroll_loop(4);
 
-  char * text = load_f_string(F("    FUCK  SHIT  CUNT  COCK  PISS  TITS  FART  POOP  DICK  GOSH"));
+void slots_round(bool rude){
+  disp1.begin_scroll_loop(1);
+  disp2.begin_scroll_loop(2);
+  disp3.begin_scroll_loop(3);
+
+  char * text;
+  char **words;
+  if(rude){
+    text = load_f_string(F("    FUCK  SHIT  CUNT  COCK  PISS  TITS  FART  POOP  DICK  BOOB"));
+    words = rude_words;
+  } else {  
+    text = load_f_string(F("    WEED  VAPE  BEER  WINE  TACO  GOLD  MINT  GIFT  JADE  CAKE"));
+    words = nice_words;
+  }
+
+#ifdef USE_PROGMEM
+  char word1[5];
+  char word2[5];
+  char word3[5];
+#endif
 
   bool running1 = true;
   bool running2 = true;
@@ -361,33 +453,96 @@ void slots_round(){
     if(running1){
       running1 = disp1.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running1){
-        disp1.show_string(bad_words[choice1]);
+        choice1 = random(NUM_WORDS);
+#ifdef USE_PROGMEM
+        // strcpy_P(word1, (char *)pgm_read_ptr(&(words[choice1])));
+        disp1.show_string("aggr");
+#else        
+        disp1.show_string(words[choice1]);
+#endif
       }
     }
 
     if(running2){
       running2 = disp2.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running2){
-        disp2.show_string(bad_words[choice2]);
+        choice2 = random(NUM_WORDS);
+#ifdef USE_PROGMEM
+        // strcpy_P(word2, (char *)pgm_read_ptr(&(words[choice2])));
+        disp2.show_string("asad");
+#else        
+        disp2.show_string(words[choice2]);
+#endif
       }
     }
 
     if(running3){
       running3 = disp3.loop_scroll_string(time, text, SLOTS_SHOW_TIME, SLOTS_SCROLL_TIME); 
       if(!running3){
-        disp3.show_string(bad_words[choice3]);
+        choice3 = random(NUM_WORDS);
+#ifdef USE_PROGMEM
+        // strcpy_P(word3, (char *)pgm_read_ptr(&(words[choice3])));
+        disp3.show_string("1234");
+#else        
+        disp3.show_string(words[choice3]);
+#endif
       }
     }
   }
 }
 
+void display_purse(){
+  sprintf(display_buffer, "CASH $%d", purse);
+  title_prompt(display_buffer);
+  delay(ROUND_DELAY);
+}
+
+void display_win(int win){
+  sprintf(display_buffer, "WIN * $%d", win);
+  title_prompt(display_buffer);
+  delay(ROUND_DELAY);
+}
+
+char *numeric_bet_str(int bet){
+  sprintf(int_buffer, load_f_string(F("$%d")), bet);
+  return int_buffer;
+}
+
+char *standard_bet_str(int bet){
+  if(bet == BET_ALL){
+    sprintf(int_buffer, load_f_string(F("ALL")));
+    return int_buffer;
+  } else
+    return numeric_bet_str(bet_amounts[bet]);
+}
+
 void slots_game(){
   unsigned long sleep_timeout = millis() + SLEEP_TIMEOUT;
   unsigned long time;
-  while(prompt(load_f_string(F("Dirty Slots"))) == -1);
+
+  bool rude;
+  bool buttons[] = {false, true, false, true};
+  switch(button_led_prompt(load_f_string(F("NICE    RUDE")), buttons)){
+    case -1:
+      return;
+    case 0:
+      return;
+    case 1:
+      rude = false;
+      break;
+    case 2:
+      rude = random(2) == 0 ? true : false;
+      break;
+    case 3:
+      rude = true;
+      break;
+  }
 
   while((time = millis()) < sleep_timeout){
-    switch(prompt(load_f_string(F("Bet $10 Back")))){
+    bet_amounts[BET_ALL] = purse;
+    sprintf(display_buffer, load_f_string(F("Bet %s Back")), standard_bet_str(current_bet));
+    bool states[] = {false, true, false, false};
+    switch(button_led_prompt(display_buffer, states)){
       case -1:
         return;
       case 0:
@@ -395,51 +550,57 @@ void slots_game(){
       case 1:
         break;
       case 2:
-        break;
+        current_bet++;
+        if(current_bet >= NUM_BET_AMOUNTS)
+          current_bet = 0;
+        sprintf(display_buffer, load_f_string(F("    %s")), standard_bet_str(current_bet));
+        disp2.scroll_string(display_buffer, 1, OPTION_FLIP_SCROLL_TIME); // TODO
+        continue;
       case 3:
         return;
     }
 
     int win = 0;
-    purse -= DEFAULT_BET;
+    purse -= bet_amounts[current_bet];
 
-    slots_round();  
+    slots_round(rude);  
 
     while(button_pressed());
 
-    // delay(ROUND_DELAY);
-    // display.clear();
+    char **words;
+    if(rude){
+      words = rude_words;
+    } else {  
+      words = nice_words;
+    }
 
-    sprintf(buffer, "%s%s%s", bad_words[choice1], bad_words[choice2], bad_words[choice3]);
-    title_prompt(buffer);
+#ifdef USE_PROGMEM
+    sprintf_P(display_buffer, "%s%s%s", (char *)pgm_read_ptr(&(words[choice1])), (char *)pgm_read_ptr(&(words[choice2])), (char *)pgm_read_ptr(&(words[choice3])));
+#else
+    sprintf(display_buffer, "%s%s%s", words[choice1], words[choice2], words[choice3]);
+#endif
+    title_prompt(display_buffer);
 
     if(choice1 == choice2 && choice2 == choice3){
       win = WIN_TRIPLE;
     } else if(choice1 == choice2 || choice2 == choice3 || choice1 == choice3){
       win = WIN_DOUBLE;
-    } else if(choice1 < WIN_WORD_CUTOFF || choice2 < WIN_WORD_CUTOFF ||choice3 < WIN_WORD_CUTOFF) {
+    } else if(choice1 < WIN_WORD_CUTOFF || choice2 < WIN_WORD_CUTOFF || choice3 < WIN_WORD_CUTOFF) {
       win = WIN_WORD;
-    } else if(choice1 < WIN_WORDS_CUTOFF || choice2 < WIN_WORDS_CUTOFF ||choice3 < WIN_WORDS_CUTOFF) {
-      win = WIN_WORDS;
-    } else {
-      win = 0;      
-    }  
+    } 
+
+    win *= bet_amounts[current_bet];
 
     if(win){
-      sprintf(buffer, "YOU WIN $%d", win);
-      title_prompt(buffer);
+      display_win(win);
+    } else 
+      // see the non-winning results in lieu of being told you lost
       delay(ROUND_DELAY);
-    } else {
-      title_prompt(load_f_string(F("You Lose - Try Again")));
-      delay(ROUND_DELAY);
-    }
 
     purse += win;
-    sprintf(buffer, "PURSE $%d", purse);
-    title_prompt(buffer);
-    delay(ROUND_DELAY);
 
-    }
+    display_purse();
+  }
 }
 // time game specific
 
@@ -447,25 +608,33 @@ void slots_game(){
 #define MAX_DELAY 5000
 #define ROUNDS 3
 
-void micros_to_ms(char * buffer, unsigned long micros){
+void micros_to_ms(char * display_buffer, unsigned long micros){
   int ms_dec, ms_frac;
   ms_dec = micros / 1000;
   ms_frac = micros % 1000;
-  sprintf(buffer, "%u.%04u", ms_dec, ms_frac);
+  sprintf(display_buffer, "%u.%04u", ms_dec, ms_frac);
 }
 
 unsigned long best_mean = (unsigned long)-1;
 
-void time_game(){
-  title_prompt(load_f_string(F("The Time Game")));
+#define TIME_WIN 1000
 
-  button_leds.activate_all(true);
-  while(prompt(load_f_string(F("Press to Start"))) == -1);
+void replace_int(){
+}
+
+void time_game(){
+                              //............
+  title_prompt(load_f_string(F("The TimeGame")));
+                                         //............
+  while(button_led_prompt(load_f_string(F("Press To Go"))) == -1);
+
+  display.clear();
+  delay(ROUND_DELAY);
 
   unsigned long mean = 0;
   for(byte i = 0; i < ROUNDS; i++){
-    button_leds.activate_all(true);
-    display.scroll_string(load_f_string(F("Press on FLASH")));
+    button_leds.activate_all(true);      //............
+    display.scroll_string(load_f_string(F("Wait 4 FLASH")), DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);
     delay(ROUND_DELAY);
     display.clear();
     button_leds.activate_all(false);
@@ -482,9 +651,9 @@ void time_game(){
 
     mean += reaction_time;    
 
-    micros_to_ms(copy_buffer, reaction_time);
-    sprintf(buffer, "Time %s ms", copy_buffer);
-    display.scroll_string(buffer);
+    micros_to_ms(int_buffer, reaction_time);
+    sprintf(display_buffer, "%s ms", int_buffer);
+    display.scroll_string(display_buffer, DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);
     delay(ROUND_DELAY);
     display.clear();
   }
@@ -492,24 +661,33 @@ void time_game(){
   while(button_pressed());
 
   mean /= ROUNDS;
-  micros_to_ms(copy_buffer, mean);
-  sprintf(buffer, "AVG Time %s ms", copy_buffer);
-  title_prompt(buffer);
+  micros_to_ms(int_buffer, mean);
+  sprintf(display_buffer, "AVERAGE %s ms", int_buffer);
+  title_prompt(display_buffer);
   delay(ROUND_DELAY);
 
   if(mean < best_mean){
     best_mean = mean;
-    micros_to_ms(copy_buffer, mean);
-    sprintf(buffer, "* NEW BEST! %s ms", copy_buffer);
+    micros_to_ms(int_buffer, mean);
+    sprintf(display_buffer, "NEW BEST * %s ms", int_buffer);
+    title_prompt(display_buffer);
+    delay(ROUND_DELAY);
+
+    display_win(TIME_WIN);
+    purse += TIME_WIN;
+    display_purse();
+
+    sprintf(display_buffer, "NEW BEST * %s ms", int_buffer);
   } else {
-    micros_to_ms(copy_buffer, best_mean);
-    sprintf(buffer, "* Best Time %s ms", copy_buffer);
+    micros_to_ms(int_buffer, best_mean);
+    sprintf(display_buffer, "* Best Time %s ms", int_buffer);
   }
-  while(prompt(buffer) == -1);
+  while(button_led_prompt(display_buffer) == -1);
 }
 
 void main_menu(){
-  switch(prompt(load_f_string(F("Slot    Time")))){
+  bool states[] = {false, true, false, true};
+  switch(button_led_prompt(load_f_string(F("Slot    Time")), states)){
     case -1:
       return;
     case 0:
@@ -543,4 +721,16 @@ void loop()
 
 // time game choose a color and the average is stored with it, allowing for three profiles
 
-// continuous slot play
+// keep stats in eeprom, have option to erase
+
+// options
+
+// bilboard options
+// forced home or not
+// sequential or random
+
+// for slots, pick a secret combo and win the jackpot if hit
+
+// press bet too quickly before it lights and when it shows the prompt the button is not lighted (as it it failed the debounce time)
+
+// another bet option all
