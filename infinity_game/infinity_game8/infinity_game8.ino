@@ -156,9 +156,6 @@ void loop()
   billboard_prompt(idle_mode, main_menu, options_mode);
 }
 
-// because the millis() are updated all the time in the background,
-// it should be possible to resume showing the clock at the correct time
-
 //if title show times < 3 doesn't show it
 
 // last frame of scroll animation seems to skip ahead 1

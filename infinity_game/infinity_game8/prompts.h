@@ -281,11 +281,11 @@ void increment_time_basis(byte &second, byte &minute, byte &hour, byte seconds=1
   seconds_to_time(total_seconds, second, minute, hour);
 
   if(option_clock_24h){
-    if(hour >= 24)
-      hour = 0;     
+    hours %= 24;
   } else {
-    if(hour >= 13)
-      hour = 1;     
+    hours %= 12;
+    if(hour == 0)
+      hour = 12;     
   }
 
   total_seconds = time_to_seconds(second, minute, hour);
