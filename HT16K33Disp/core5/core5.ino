@@ -18,9 +18,9 @@ void setup()
 
   Wire.begin();
 
-  disp1.Init(brightness1); 
-  disp2.Init(brightness2); 
-  disp3.Init(brightness3); 
+  disp1.init(brightness1); 
+  disp2.init(brightness2); 
+  disp3.init(brightness3); 
 
   disp1.clear();
   disp2.clear();

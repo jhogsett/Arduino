@@ -26,7 +26,7 @@ void setup(){
 
   Wire.begin();
 
-  disp1.Init(brightness1); 
+  disp1.init(brightness1); 
   // disp2.Init(brightness2); 
   // disp3.Init(brightness3); 
 

@@ -88,7 +88,7 @@ void setup() {
 
   byte brightness[1] = { 3 };
   Wire.begin();
-  disp.Init(brightness);
+  disp.init(brightness);
   disp.clear();
 
   price_handler.begin(PRICE_MIN, millis());
