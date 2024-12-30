@@ -156,16 +156,21 @@ void loop()
   billboard_prompt(idle_mode, main_menu, options_mode);
 }
 
-//if title show times < 3 doesn't show it
+// have segments disappear randomly or go into place randomly
+
+// keep timer running in the background
+
+// if title show times < 3 doesn't show it
 
 // last frame of scroll animation seems to skip ahead 1
 
 // time game choose a color and the average is stored with it, allowing for three profiles
 
-// for slots, pick a secret combo and win the jackpot if hit
+// tests - button closure time while pressed, glitchyness etc., timing of millis
 
-// if scoring includes special word, double 
+// options for idle time
 
-// stop watch, alarm timer, clock
+// setting for clock speed
 
-// tests - button closure time while pressed, glitchyness etc.
+// the clock should look different in idle mode so you know it's ok not to use a long press (or in idle mode long press to exit)
+
