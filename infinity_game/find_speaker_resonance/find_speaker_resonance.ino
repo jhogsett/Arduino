@@ -1,4 +1,4 @@
-#define SPIN 2
+#define SPIN 13
 #define DELAY 300
 
 #define START 200
