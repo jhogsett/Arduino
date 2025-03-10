@@ -12,7 +12,7 @@
 // #define INV_FREQ 380
 // #define INV_FREQ 400
 
-#define PULSES 100
+#define PULSES 1000
 
 #define BEEP_TIMES 4
 #define BEEP_DELAY 1250

@@ -49,10 +49,19 @@ void silence(){
 }
 
 void loop(void){
-      AD1.setFrequency(0, 1000.0);
-      AD2.setFrequency(0, 1010.0);
-      AD3.setFrequency(0, 1015.0);
-      AD4.setFrequency(0, 1020.0);
+      AD1.setFrequency(0, 1001.0);
+      AD2.setFrequency(0, 1025.0);
+      AD3.setFrequency(0, 1067.0);
+      AD4.setFrequency(0, 1111.0);
+      delay(250);
+      
+      silence();
+      delay(100);
+
+      AD1.setFrequency(0, 1001.0);
+      AD2.setFrequency(0, 1025.0);
+      AD3.setFrequency(0, 1067.0);
+      AD4.setFrequency(0, 1111.0);
       delay(250);
 
       silence();

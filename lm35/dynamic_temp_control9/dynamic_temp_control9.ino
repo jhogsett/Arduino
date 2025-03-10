@@ -88,13 +88,13 @@ void fan_opening(){
 
 float sample_temp(){
   int temp_adc_val;
-  float temp_val, temp_f;
+  float temp_val, temp_c, temp_f;
 
   temp_adc_val = analogRead(SENSOR_PIN);
 
   temp_val = (temp_adc_val * 4.88);	/* Convert adc value to equivalent voltage */
-  temp_f = (temp_val / 10.0);	/* LM35 gives output of 10mv/°C */
-  // temp_f = temp_c * (9.0 / 5.0) + 32.0;
+  temp_c = (temp_val / 10.0);	/* LM35 gives output of 10mv/°C */
+  temp_f = temp_c * (9.0 / 5.0) + 32.0;
 
   return temp_f;
 }

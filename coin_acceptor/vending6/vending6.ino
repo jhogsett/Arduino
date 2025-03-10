@@ -86,7 +86,12 @@ void setup() {
 
   randomizer.randomize();
 
+  // original green
   byte brightness[1] = { 3 };
+
+  // orange
+  // byte brightness[1] = { 15 };
+
   Wire.begin();
   disp.init(brightness);
   disp.clear();
