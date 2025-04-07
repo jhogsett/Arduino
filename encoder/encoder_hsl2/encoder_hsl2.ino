@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include <limits.h>
 #include <Encoder.h>
+#include <hsl_to_rgb.h>
 #include "encoder_handler.h"
 
 #define _IDA 1
@@ -34,56 +35,56 @@
 
 #define PULSES_PER_DETENT 2
 
-typedef struct rgb_color
-{
-  unsigned char red, green, blue;
-} rgb_color;
+// typedef struct rgb_color
+// {
+//   unsigned char red, green, blue;
+// } rgb_color;
    
-// hue: 0-359, sat: 0-255, val (lightness): 0-255
-rgb_color hsl_to_rgb(int hue, int sat=255, int val=255) {
-  int r, g, b, base;
+// // hue: 0-359, sat: 0-255, val (lightness): 0-255
+// rgb_color hsl_to_rgb(int hue, int sat=255, int val=255) {
+//   int r, g, b, base;
 
-  if (sat == 0) { // Achromatic color (gray).
-    r = val;
-    g = val;
-    b = val;
-  } else  {
-    base = ((255 - sat) * val)>>8;
-    switch(hue/60) {
-      case 0:
-        r = val;
-        g = (((val-base)*hue)/60)+base;
-        b = base;
-        break;
-      case 1:
-        r = (((val-base)*(60-(hue%60)))/60)+base;
-        g = val;
-        b = base;
-        break;
-      case 2:
-        r = base;
-        g = val;
-        b = (((val-base)*(hue%60))/60)+base;
-        break;
-      case 3:
-        r = base;
-        g = (((val-base)*(60-(hue%60)))/60)+base;
-        b = val;
-        break;
-      case 4:
-        r = (((val-base)*(hue%60))/60)+base;
-        g = base;
-        b = val;
-        break;
-      case 5:
-        r = val;
-        g = base;
-        b = (((val-base)*(60-(hue%60)))/60)+base;
-        break;
-    }
-  }
-  return (rgb_color){r, g, b};
-}   
+//   if (sat == 0) { // Achromatic color (gray).
+//     r = val;
+//     g = val;
+//     b = val;
+//   } else  {
+//     base = ((255 - sat) * val)>>8;
+//     switch(hue/60) {
+//       case 0:
+//         r = val;
+//         g = (((val-base)*hue)/60)+base;
+//         b = base;
+//         break;
+//       case 1:
+//         r = (((val-base)*(60-(hue%60)))/60)+base;
+//         g = val;
+//         b = base;
+//         break;
+//       case 2:
+//         r = base;
+//         g = val;
+//         b = (((val-base)*(hue%60))/60)+base;
+//         break;
+//       case 3:
+//         r = base;
+//         g = (((val-base)*(60-(hue%60)))/60)+base;
+//         b = val;
+//         break;
+//       case 4:
+//         r = (((val-base)*(hue%60))/60)+base;
+//         g = base;
+//         b = val;
+//         break;
+//       case 5:
+//         r = val;
+//         g = base;
+//         b = (((val-base)*(60-(hue%60)))/60)+base;
+//         break;
+//     }
+//   }
+//   return (rgb_color){r, g, b};
+// }   
     
 EncoderHandler encoder_handlerA(1, CLKA, DTA, SWA, PULSES_PER_DETENT);
 EncoderHandler encoder_handlerB(2, CLKB, DTB, SWB, PULSES_PER_DETENT);

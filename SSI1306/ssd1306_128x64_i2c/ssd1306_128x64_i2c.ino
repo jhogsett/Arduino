@@ -23,6 +23,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "panel_handler.h"
+#include "hue_panel.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -34,6 +35,7 @@
 // On an arduino LEONARDO:   2(SDA),  3(SCL), ...
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // #define NUMFLAKES     10 // Number of snowflakes in the animation example
@@ -61,7 +63,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // extern void testdrawchar(void);
 
 void setup() {
-  Serial.begin(115200);
+  // Serial.begin(115200);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -80,12 +82,13 @@ void setup() {
   // Clear the buffer
   display.clearDisplay();
 
-  PanelHandler ph1(&display, 0, 0, 42, 48, NULL, 0);
-  PanelHandler ph2(&display, 44, 0, 42, 48, NULL, 0);
-  PanelHandler ph3(&display, 86, 0, 42, 48, NULL, 0);
+  HuePanel     ph1(&display, 0, 0, 128, 16, NULL, 0);
+  PanelHandler ph2(&display, 0, 16, 128, 16, NULL, 0);
+  PanelHandler ph3(&display, 0, 32, 128, 16, NULL, 0);
   PanelHandler * subpanels[3] = {&ph1, &ph2, &ph3};
 
   PanelHandler ph(&display, 0, 16, 128, 48, subpanels, 3);
+  // PanelHandler ph(&display, 0, 16, 128, 48, NULL, 0);
 
   ph.on_draw(0, 0);
   // ph1.on_draw(0, 0);

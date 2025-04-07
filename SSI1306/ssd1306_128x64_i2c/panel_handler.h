@@ -20,7 +20,7 @@ public:
   const int EVENT_INCREMENT = 2;
   const int EVENT_LONG = 3;
   
-  void PanelHandler::on_draw(byte xoff, byte yoff, bool flush=true);
+  virtual void PanelHandler::on_draw(byte xoff, byte yoff, bool flush=true);
     
 private:
 
@@ -131,25 +131,27 @@ void PanelHandler::on_draw(byte xoff, byte yoff, bool flush){
     _display->fillRect(xoff + _x, yoff + _y, _w, _h, SSD1306_BLACK);
   }
   
-  if(_active)
-    _display->setTextColor(SSD1306_BLACK, SSD1306_WHITE);
-  else
-    _display->setTextColor(SSD1306_WHITE);
+  // if(_active)
+  //   _display->setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+  // else
+  //   _display->setTextColor(SSD1306_WHITE);
   
-  char buf[10];
-  sprintf_P(buf, PSTR("%04x"), (unsigned long)this);
+  // char buf[10];
+  // sprintf_P(buf, PSTR("%04x"), (unsigned long)this);
  
-  int cxoff = (_w - text_width(4, TEXT_SIZE)) / 2;
-  int cyoff = (_h - text_height(1, TEXT_SIZE)) / 2;
+  // int cxoff = (_w - text_width(4, TEXT_SIZE)) / 2;
+  // int cyoff = (_h - text_height(1, TEXT_SIZE)) / 2;
   
-  Serial.println(cxoff + xoff + _x);
-  Serial.println(cyoff + yoff + _y);
-  Serial.println();
+  // Serial.println(cxoff + xoff + _x);
+  // Serial.println(cyoff + yoff + _y);
+  // Serial.println();
   
-  _display->setCursor(cxoff + xoff + _x, cyoff + yoff + _y);
+  // _display->setCursor(cxoff + xoff + _x, cyoff + yoff + _y);
   
-  _display->setTextSize(TEXT_SIZE);
-  _display->print((unsigned long)this, HEX);
+  // _display->setTextSize(TEXT_SIZE);
+  // _display->print((unsigned long)this, HEX);
+
+  // _display->drawRect(xoff + _x, yoff + _y, _w, _h, SSD1306_WHITE);
 
   if(_num_panels){
     for(byte i = 0; i < _num_panels; i++){

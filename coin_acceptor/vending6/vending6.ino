@@ -159,7 +159,10 @@ void sendData(int coinType){
     calibrate_wheel();
   }
 
-  if(coinType == COIN_NICKEL) deposited += 5;
+
+
+  if(coinType == COIN_NICKEL) dep
+osited += 5;
   if(coinType == COIN_DIME) deposited += 10;
   if(coinType == COIN_QUARTER) deposited += 25;
   if(coinType == COIN_GOLD) deposited += 100;
