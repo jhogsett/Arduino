@@ -13,7 +13,7 @@ const char *temp_words[NUM_TEMP_WORDS] = {"CRIO","ICEY","FROZ","BRRR","CHIL","CO
 #define MAX_TEMP 132.0
 #define DIVISION 5.0
 
-void temp_to_condition(char *buffer, const char *pattern, float temp){
+int temp_to_condition(char *buffer, const char *pattern, float temp){
   if(temp < BASE_TEMP){
     temp = BASE_TEMP;
   } else if(temp > MAX_TEMP){
@@ -23,6 +23,7 @@ void temp_to_condition(char *buffer, const char *pattern, float temp){
   temp /= DIVISION;
   int index = int(temp);
   sprintf(buffer, pattern, temp_words[index]);
+  return index;
 }
 
 #define RANDOM_SEED_PIN A0
@@ -91,18 +92,19 @@ void setup() {
       disp1 = new HT16K33Disp(0x70, 2);
       disp2 = new HT16K33Disp(0x71, 1);
       disp1->init(brightness);
-      disp2->init(brightness);
+      // disp2->init(brightness);
       break;
     }
     case 3:
     {
-      byte brightness[3] = { 1, 1, 1 }; // Green
+      // byte brightness[3] = { 1, 1, 1 }; // Green
+      byte brightness[3] = { 1, 9, 15 }; // Green/Amber/Red
       disp1 = new HT16K33Disp(0x70, 3);
       disp2 = new HT16K33Disp(0x71, 1);
       disp3 = new HT16K33Disp(0x72, 1);
       disp1->init(brightness);
-      disp2->init(brightness);
-      disp3->init(brightness);
+      // disp2->init(brightness+1);
+      // disp3->init(brightness+2)
       break;
     }
   }
@@ -184,7 +186,7 @@ void loop() {
 
   char condition[10];
 
-  temp_to_condition(condition, "%s",  heat_index);
+  int condition_index = temp_to_condition(condition, "%s",  heat_index);
 
   char temps[10];
   if(temp < 100.0){
@@ -211,15 +213,33 @@ void loop() {
     case 2:
     {
       if(temp < 100.0){
-        sprintf(buffer, "%3s %4s", temps, condition);
+        sprintf(buffer, "%4s %4s", temps, condition);
       } else {
-        sprintf(buffer, "%4s%4s", temps, condition);
+        sprintf(buffer, "%5s%4s", temps, condition);
       }
       break;
     }
     case 3:
     {
-      sprintf(buffer, "%4s%4s%4s", temps, indexs, condition);
+      if(condition_index < 7 || condition_index > 12){
+        if(temp < 100.0){
+          sprintf(buffer, "%4s %4s%4s", temps, indexs, condition);
+        } else {
+          sprintf(buffer, "%5s%4s%4s", temps, indexs, condition);
+        }
+      } else if(condition_index < 9 || condition_index > 10){
+        if(temp < 100.0){
+          sprintf(buffer, "%4s %4s%4s", temps, condition, indexs);
+        } else {
+          sprintf(buffer, "%5s%4s%4s", temps, condition, indexs);
+        }
+      } else{
+        if(temp < 100.0){
+          sprintf(buffer, "%4s%5s%4s", condition, temps, indexs);
+        } else {
+          sprintf(buffer, "%4s%4s %4s", condition, temps, indexs);
+        }
+      }
       break;
     }
   }
