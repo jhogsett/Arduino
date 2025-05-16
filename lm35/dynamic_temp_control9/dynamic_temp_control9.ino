@@ -20,7 +20,7 @@
 #define HEATING_PIN 3
 #define COOLER_PIN 6
 #define HEATER_PIN 10
-#define SENSOR_PIN A7
+#define SENSOR_PIN A1
 
 #define COOLER_MAX 255 // maximum fan on voltage
 #define COOLER_MIN 31 // minimum fan on voltage
@@ -95,6 +95,8 @@ float sample_temp(){
   temp_val = (temp_adc_val * 4.88);	/* Convert adc value to equivalent voltage */
   temp_c = (temp_val / 10.0);	/* LM35 gives output of 10mv/°C */
   temp_f = temp_c * (9.0 / 5.0) + 32.0;
+
+  // temp_f = (temp_val / 10.0);	
 
   return temp_f;
 }

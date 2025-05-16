@@ -63,7 +63,8 @@ void setup() {
   trend_detector_high = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux);
   trend_detector_low = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux);
 
-  pinMode(13, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(11, OUTPUT);
 }
 
 void loop() {
@@ -78,7 +79,20 @@ void loop() {
     trend_detector_low->sample(lux);
   }
 
-  if(!--report){
+  float range = trend_detector_high->fast_mean() - trend_detector_low->fast_mean();
+  // float range = trend_detector_high->slow_mean() - trend_detector_low->slow_mean();
+  float spread = range / 256.0;
+  float base = trend_detector_low->slow_mean();
+  float val = (trend_detector_main->fast_mean() - base) * spread;
+  float ival = val * 256.0;
+  int i = int(ival);
+
+  if(i >= 0)
+    analogWrite(9, 1 + (i * 4));
+
+  // Serial.println(i);
+
+  if(false && !--report){
     Serial.print(lux);
     Serial.print(" - ");
 
@@ -111,7 +125,7 @@ void loop() {
 
     Serial.println();
 
-    digitalWrite(13, trend_detector_main->settled() ? HIGH : LOW);
+    digitalWrite(11, trend_detector_main->settled() ? HIGH : LOW);
 
     report = REPORT_RATE;
   }
