@@ -10,7 +10,7 @@
 // Pins for SPI comm with the AD9833 IC
 const uint8_t PIN_DATA = 11;  ///< SPI Data pin number
 const uint8_t PIN_CLK = 13;  	///< SPI Clock pin number
-const uint8_t PIN_FSYNC = 8; ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC = 10; ///< SPI Load pin number (FSYNC in AD9833 usage)
 
 // MD_AD9833	AD(PIN_FSYNC);  // Hardware SPI
 MD_AD9833	AD(PIN_DATA, PIN_CLK, PIN_FSYNC); // Arbitrary SPI pins
@@ -22,7 +22,7 @@ void setup(void)
 
 void loop(void)
 {
-  AD.setFrequency(0, 1000000.0);
+  AD.setFrequency(0, 700.0);
   AD.setMode(MD_AD9833::MODE_SINE);
 
 
