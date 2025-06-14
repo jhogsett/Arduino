@@ -44,6 +44,13 @@ TrendDetector *trend_detector_low;
 #define REPORT_RATE 1000
 int report = REPORT_RATE;
 
+void TCA9548A(uint8_t bus){
+    Wire.beginTransmission(0x70);  // TCA9548A address is 0x70
+    Wire.write(1 << bus);          // send byte to select bus
+    Wire.endTransmission();
+    // Serial.print(bus);
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -52,6 +59,8 @@ void setup() {
   // On esp8266 you can select SCL and SDA pins using Wire.begin(D4, D3);
   // For Wemos / Lolin D1 Mini Pro and the Ambient Light shield use
   // Wire.begin(D2, D1);
+
+  TCA9548A(0);
 
   lightMeter.begin();
 
@@ -67,6 +76,8 @@ void setup() {
 }
 
 void loop() {
+  TCA9548A(1);
+
   float lux = lightMeter.readLightLevel();
 
   trend_detector_main->sample(lux);
