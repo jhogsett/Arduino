@@ -2,6 +2,11 @@
 #include <Arduino.h>
 #include <PololuLedStrip.h>
 
+// extend visual apparent range by modulating last led's brightness
+// establish brightness baseline and ability to adjust overall brightness
+// apply a damping function
+
+
 // Create an ledStrip object and specify the pin it will use.
 PololuLedStrip<A3> ledStrip;
 
@@ -54,7 +59,14 @@ void loop()
     value = 0;
 
   int count = value / 8;
+  if(count > 7)
+    count = 7;
 
-  ledStrip.write(empty, 7);
-  ledStrip.write(colors, count);
+  rgb_color dbuffer[LED_COUNT];
+  memcpy(dbuffer, colors, count * sizeof(rgb_color));
+  memcpy(dbuffer + count, empty, (7 - count) * sizeof(rgb_color));
+
+  // ledStrip.write(colors, count);
+  // ledStrip.write(empty, 7-count);
+  ledStrip.write(dbuffer, 7);
 }
