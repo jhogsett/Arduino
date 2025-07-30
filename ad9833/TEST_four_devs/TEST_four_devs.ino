@@ -56,10 +56,10 @@ void loop(void){
   AD3.setMode(MD_AD9833::MODE_SINE);
   AD4.setMode(MD_AD9833::MODE_SINE);
 
-  AD1.setFrequency(0, 350.0);
-  AD2.setFrequency(0, 440.0);
-  AD3.setFrequency(0, 59.0);
-  AD4.setFrequency(0, 60.0);
+  AD3.setFrequency(0, 350.0);
+  AD4.setFrequency(0, 440.0);
+  AD1.setFrequency(0, 560.0);
+  AD2.setFrequency(0, 740.0);
 
   // AD3.setFrequency(0, 1000.2);
   // AD4.setFrequency(0, 1000.3);

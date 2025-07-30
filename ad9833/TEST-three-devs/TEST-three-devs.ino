@@ -10,10 +10,10 @@ static RandomSeed<RANDOM_SEED_PIN> randomizer;
 // Pins for SPI comm with the AD9833 IC
 const uint8_t PIN_DATA = 11;  ///< SPI Data pin number
 const uint8_t PIN_CLK = 13;  	///< SPI Clock pin number
-const uint8_t PIN_FSYNC1 = 10; ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC2 = 9;  ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC3 = 8;  ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC4 = 7;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC1 = 8; ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC2 = A0;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC3 = A1;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC4 = A2;  ///< SPI Load pin number (FSYNC in AD9833 usage)
 
 MD_AD9833	AD1(PIN_DATA, PIN_CLK, PIN_FSYNC1); // Arbitrary SPI pins
 MD_AD9833	AD2(PIN_DATA, PIN_CLK, PIN_FSYNC2); // Arbitrary SPI pins
@@ -51,13 +51,13 @@ void silence(){
 }
 
 void loop(void){
-  AD1.setMode(MD_AD9833::MODE_SQUARE1);
-  AD2.setMode(MD_AD9833::MODE_SQUARE1);
-  AD3.setMode(MD_AD9833::MODE_SQUARE1);
+  AD1.setMode(MD_AD9833::MODE_SINE);
+  AD2.setMode(MD_AD9833::MODE_SINE);
+  AD3.setMode(MD_AD9833::MODE_SINE);
 
-  AD1.setFrequency(0, 30.0);
-  AD2.setFrequency(0, 31.0);
-  AD3.setFrequency(0, 32.0);
+  AD1.setFrequency(0, 350.0);
+  AD2.setFrequency(0, 440.0);
+  AD3.setFrequency(0, 60.0);
 
   // AD3.setFrequency(0, 1000.2);
   // AD4.setFrequency(0, 1000.3);

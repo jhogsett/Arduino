@@ -24,9 +24,9 @@ HT16K33Disp disp3(0x72, 1);
 void setup() {  
   randomizer.randomize();
 
-  byte brightness1[3] = { 15, 15, 15 };
-  byte brightness2[1] = { 15 };
-  byte brightness3[1] = { 15 };
+  byte brightness1[3] = { 2, 2, 2 };
+  byte brightness2[1] = { 2 };
+  byte brightness3[1] = { 2 };
 
   Wire.begin();
 

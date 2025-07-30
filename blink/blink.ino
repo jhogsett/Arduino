@@ -28,24 +28,27 @@
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(4, INPUT_PULLUP);
 }
 
 // the loop function runs over and over again forever
 void loop() {
-  digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
-  delay(750);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
-  delay(750);                      // wait for a second
+  // if(LOW == digitalRead(4)){
+    digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
+    delay(750);                      // wait for a second
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
+    delay(750);                      // wait for a second
 
-  digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
-  delay(250);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
-  delay(250);                      // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
+    delay(250);                      // wait for a second
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
+    delay(250);                      // wait for a second
 
-  digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
-  delay(250);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
-  delay(250);       
+    digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (LOW is the voltage level)
+    delay(250);                      // wait for a second
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage HIGH
+    delay(250);       
+  // }
   
   delay(750);               // wait for a second
 }
