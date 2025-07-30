@@ -77,6 +77,7 @@ void setup() {
   for(int i = FIRST_LED; i <= LAST_LED; i++)
     pinMode(i, OUTPUT);
 
+
   device_display_count = count_displays();
   switch(device_display_count){
     case 1:
