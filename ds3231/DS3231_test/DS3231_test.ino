@@ -25,7 +25,7 @@ void setup() {
 	Wire.begin();
  
 	// Start the serial interface
-	Serial.begin(57600);
+	Serial.begin(115200);
 }
 
 void loop() {
