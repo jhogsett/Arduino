@@ -7,18 +7,19 @@
  #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
-#include <Wire.h>
-#include <DS3231-RTC.h>
+// #define BLACK_DEVICE 
+#define WHITE_DEVICE 
+
+#define RANDOM_SEED_PIN A7
+static RandomSeed<RANDOM_SEED_PIN> randomizer;
 
 #define SENSOR_PIN 2
 #define LED_PIN 3
-
 #define FIRST_MOTOR_PIN 14
-#define MOTOR_SPEED 5
+#define MOTOR_SPEED 13
 #define SLOW_DELAY 0
 #define FORE 1
 #define BACK -1
-
 #define RESTART_WAIT 3000L
 #define RESET_COUNT 5
 #define FOUND LOW
@@ -31,11 +32,6 @@
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS 36 // Popular NeoPixel ring size
 
-DS3231 myRTC;
-
-#define RANDOM_SEED_PIN A7
-static RandomSeed<RANDOM_SEED_PIN> randomizer;
-
 const int stepsPerRevolution = 2048;
 const double cent_step = 2048 / 60; 
 
@@ -46,7 +42,6 @@ Stepper myStepper(stepsPerRevolution,
                   FIRST_MOTOR_PIN+3);
 
 
-
 // When setting up the NeoPixel library, we tell it how many pixels,
 // and which pin to use to send signals. Note that for older NeoPixel
 // strips you might need to change the third parameter -- see the
@@ -55,62 +50,23 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 int cal_steps1 = 0;
 int cal_steps2 = 0;
+#if defined(BLACK_DEVICE)
 int centering = 9;
-
-
-// fractional amount not stepped forward
-float carry = 0.0;
+#elif defined(WHITE_DEVICE)
+int centering = -2;
+#endif
 
 void(* resetFunc)(void) = 0;
 
 float hand_position = 0.0;
 
-// void calibrate_clock_hand(int adjustment){
-//   carry = 0.0;
-//   hand_position = 0.0;
-//   cal_steps = 0;
-
-//   // if already on the sensor, roll forward until it's not found
-//   if(digitalRead(SENSOR_PIN) == FOUND){
-//     for(int i = 0; i < stepsPerRevolution; i++){
-//       if(digitalRead(SENSOR_PIN) == NOTFOUND)
-//         break;
-//       myStepper.step(FORE);
-//     }
-//   }
-
-//   // roll forward untli the sensor is found
-//   for(int i = 0; i < stepsPerRevolution; i++){
-//     if(digitalRead(SENSOR_PIN) == FOUND)
-//       break;
-//     myStepper.step(FORE);
-//   }
-
-//   // roll slowly until the sensor is not found and count the steps
-//   for(int i = 0; i < 2 * stepsPerRevolution; i++){
-//     if(digitalRead(SENSOR_PIN) == NOTFOUND)
-//       break;
-//     myStepper.step(FORE);
-//     cal_steps++;
-//     delay(SLOW_DELAY);
-//   }
-
-//   // roll back slowly half the number of counted steps
-//   // plus the device-specific centering fudge amount
-//   for(int i = 0; i < (cal_steps / 2) + adjustment; i++){
-//     myStepper.step(BACK);
-//     delay(SLOW_DELAY);
-//   }  
-
-//   Serial.println("---Calibration Steps");
-//   Serial.println(cal_steps);
-// }
-
 void calibrate_clock_hand(int adjustment){
-  carry = 0.0;
   hand_position = 0.0;
   cal_steps1 = 0;
   cal_steps2 = 0;
+
+  pixels.fill(pixels.Color(64, 0, 0));
+  pixels.show();
 
   // if already on the sensor, roll forward until it's not found
   if(digitalRead(SENSOR_PIN) == FOUND){
@@ -121,6 +77,10 @@ void calibrate_clock_hand(int adjustment){
     }
   }
 
+  pixels.fill(pixels.Color(64, 32, 0));
+  pixels.show();
+  // delay(1000);
+
   // roll forward until the sensor is found
   for(int i = 0; i < stepsPerRevolution; i++){
     if(digitalRead(SENSOR_PIN) == FOUND)
@@ -128,6 +88,10 @@ void calibrate_clock_hand(int adjustment){
     myStepper.step(FORE);
     // delay(SLOW_DELAY);
   }
+
+  pixels.fill(pixels.Color(0, 64, 0));
+  pixels.show();
+  // delay(1000);
 
   // roll forward slowly until the sensor is not found and count the steps
   for(int i = 0; i < 2 * stepsPerRevolution; i++){
@@ -137,6 +101,10 @@ void calibrate_clock_hand(int adjustment){
     cal_steps1++;
     delay(SLOW_DELAY);
   }
+
+  pixels.fill(pixels.Color(0, 32, 32));
+  pixels.show();
+  // delay(1000);
 
   Serial.println("------");
   Serial.print("Fwd Steps: ");
@@ -149,6 +117,10 @@ void calibrate_clock_hand(int adjustment){
     myStepper.step(BACK);
     delay(SLOW_DELAY);
   }
+
+  pixels.fill(pixels.Color(0, 0, 64));
+  pixels.show();
+  // delay(1000);
 
   // roll back slowly until the sensor is not found and count the steps
   for(int i = 0; i < 2 * stepsPerRevolution; i++){
@@ -164,11 +136,18 @@ void calibrate_clock_hand(int adjustment){
 
   int cal_steps = (cal_steps1 + cal_steps2) / 2;
 
+  pixels.fill(pixels.Color(32, 0, 64));
+  pixels.show();
+  // delay(1000);
+
   // roll forward slowly the average of the counted steps
   for(int i = 0; i < cal_steps; i++){
     myStepper.step(FORE);
     delay(SLOW_DELAY);
   }  
+
+  pixels.fill(pixels.Color(32, 0, 32));
+  pixels.show();
 
   // roll back slowly half the number of counted steps
   // plus the device-specific centering fudge amount
@@ -182,7 +161,7 @@ void calibrate_clock_hand(int adjustment){
 #define fabs(x) ((x)>0.0?(x):-(x))
 
 bool motor_pins[4] = {LOW, LOW, LOW, LOW};
-#define MOTOR_SETTLE_TIME 10
+#define MOTOR_SETTLE_TIME 100
 
 void pause_motor(){
   for(int i = 0; i < 4; i++){
@@ -200,95 +179,46 @@ void resume_motor(){
 }
 
 void move_hand(float new_position){
-  // Serial.println("-------");
-  // Serial.println(hand_position);
-  // Serial.println(new_position);
-
   resume_motor();
 
   float dif;
   if(new_position > hand_position){
-
     // could be a real less or a fake more due to the wrap around
-
     dif = new_position - hand_position;
     float fdif = abs((new_position - stepsPerRevolution) - hand_position);
 
-    // Serial.println("%%%%%");
-    // Serial.println(dif);
-    // Serial.println(fdif);
-    // Serial.println("%%%%%");
-
     if(fdif > 0.0 && fdif < dif){
-      // Serial.println("*****");
-      // Serial.println(fdif);
-      // Serial.println("*****");
-
       // move back past the origin
       hand_position -= int(fdif);
-      carry -= fdif - int(fdif);
-
-      myStepper.step(-(fdif + int(carry)));
-      carry -= int(carry);
-
+      myStepper.step(-fdif);
     } else {
       if(dif <= stepsPerRevolution / 2){
         hand_position += int(dif);
-        carry += dif - int(dif);
-
-        myStepper.step(dif + int(carry));
-        carry -= int(carry);
-
+        myStepper.step(dif);
       } else {
         hand_position -= int(dif);
-        carry -= dif - int(dif);
-
-        myStepper.step(-(dif + int(carry)));
-        carry -= int(carry);
+        myStepper.step(-dif);
       }
     }
   } 
   else if(new_position < hand_position){
-
-    // could be a real less or a fake less due to the wrap around
-
+    // could be a real less or a fake more due to the wrap around
     dif = hand_position - new_position;
     float fdif = (new_position + stepsPerRevolution) - hand_position;
 
     if(fdif < dif){
-      // Serial.println("*****");
-      // Serial.println(fdif);
-      // Serial.println("*****");
-      // move ahead past the origin
       hand_position += int(fdif);
-      carry += fdif - int(fdif);
-
-      myStepper.step(fdif  + int(carry));
-      carry -= int(carry);
+      myStepper.step(fdif);
     } else {
-
-      // dif = hand_position - new_position;
-
       if(dif <= stepsPerRevolution / 2){
         hand_position -= int(dif);
-        carry -= dif - int(dif);
-        myStepper.step(-(dif + int(carry)));
-        carry -= int(carry);
+        myStepper.step(dif));
       } else {
         hand_position += int(dif);
-        carry += dif - int(dif);
-
-        myStepper.step(dif + int(carry));
-        carry -= int(carry);
+        myStepper.step(dif);
       }
     }
   }
-
-  // Serial.println(hand_position);
-  // Serial.println(carry);
-
-// 2013.87
-// 0.00
 
   if(hand_position > stepsPerRevolution){
     hand_position -= stepsPerRevolution;
@@ -296,13 +226,11 @@ void move_hand(float new_position){
     hand_position += stepsPerRevolution;
   }
 
-  // hand_position = new_position;
   pause_motor();
-
 }
 
 void home_hand(){
-  move_hand(-carry);
+  move_hand(0.0);
 }
 
 // call when supposedly at home position
@@ -355,8 +283,6 @@ unsigned long next_time = 0L;
 void setup() {
   Serial.begin(115200);
 
-  Wire.begin();
-
   randomizer.randomize();
 
   myStepper.setSpeed(MOTOR_SPEED);
@@ -368,9 +294,6 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
 
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
-  pixels.setBrightness(63);
-  pixels.clear();
-  pixels.show();
 
   Serial.println();
 
@@ -380,86 +303,64 @@ void setup() {
   // myStepper.step(500 * BACK);
 
   // myStepper.step(FORE * random(stepsPerRevolution * 2) - stepsPerRevolution);
-  pixels.fill(pixels.Color(4, 4, 4));
-  pixels.show();
   calibrate_clock_hand(centering);
-  pixels.setPixelColor(0, pixels.Color(128, 128, 128));
-  pixels.show();
-  delay(1000);
+  delay(5000);
 
   next_time = millis() + PERIOD;
 }
 
 #define CHECK_AFTER 20
 
-bool century = false;
-bool h12Flag;
-bool pm;
-int last_second = -1;
-int last_minute = -1;
-long first_hue = 0;
-
-#define MAX_HUE (5*65536)
-#define HUE_STEP 1024
-
-#define RTC_CHECK_DELAY 50
-
+int last_pos = 0;
+int check_count = 0;
 void loop() {
 
-  // do something only once per second
-  int second = myRTC.getSecond();
-  if(second == last_second){
-    delay(RTC_CHECK_DELAY);
-    return;
-  }
-  last_second = second;
+  pixels.clear(); // Set all pixel colors to 'off'
 
-  int year = myRTC.getYear();
-  int month = myRTC.getMonth(century);
-  int day = myRTC.getDate();
-  int hour = myRTC.getHour(h12Flag, pm);
-  int minute = myRTC.getMinute();
+  int position;
+  while(abs(last_pos - (position = random(24))) > 6);
 
-  // advance the hue
-  // pixels.rainbow(first_hue, 1, 255, 8, false);
-  pixels.fill(Adafruit_NeoPixel::ColorHSV(first_hue, 255, 4), 0, 24);
-  pixels.fill(Adafruit_NeoPixel::ColorHSV(first_hue + 32768L, 255, 127), 24, 12);
-  first_hue += HUE_STEP;
-  first_hue %= MAX_HUE;
-
-  int hour12 = hour % 12 + 1;
-
-  // // this is multipli-ambiguous
-  // for(int i = 0; i < 12; i++){
-  //   if(i < hour12)
-  //     pixels.setPixelColor(i * 2, pixels.Color(8, 64, 8));
-  //   // else
-  //   //   pixels.setPixelColor(i * 2, pixels.Color(0, 0, 0));
-  // }
-
-  // this is very simple
-  // pixels.setPixelColor(hour12 * 2, pixels.Color(128, 128, 128));
-
-  for(int i = 1; i < 12; i++){
-    if(i < hour12)
-      pixels.setPixelColor(i * 2, pixels.Color(128, 128, 128));
-  }
-  if(hour12 == 1)
-      pixels.setPixelColor(0, pixels.Color(128, 128, 128));
-
+  pixels.setPixelColor(position, pixels.Color(16, 0, 16));
   pixels.show();   // Send the updated pixel colors to the hardware.
 
-  // move hand once per minute due to accumulated errors moving each second
-  if(minute != last_minute){
-    float hand_position = minute * (stepsPerRevolution / (60.0));
-    move_hand(hand_position);
-  }
-  last_minute = minute;
+  float hand_position = position * (stepsPerRevolution / 24.0);
 
-  // int total_seconds = minute * 60 + second;
-  // float hand_position = total_seconds * (stepsPerRevolution / (3600.0));
-  // move_hand(hand_position);
+  // unsigned long time;
+  // while((time = millis()) < next_time)
+  //   ;
+
+  // second = ++second % 60;
+  // float hand_position = second * (stepsPerRevolution / 60.0);
+
+  move_hand(hand_position);
+  // next_time = time + PERIOD;
+
+  delay(500);
+
+  if(++check_count > CHECK_AFTER){
+    check_count = 0;
+
+    pixels.clear(); // Set all pixel colors to 'off'
+    pixels.setPixelColor(0, pixels.Color(32, 0, 0));
+    pixels.show();   // Send the updated pixel colors to the hardware.
+
+    home_hand();
+    delay(500);
+
+    pixels.clear(); // Set all pixel colors to 'off'
+    pixels.setPixelColor(0, pixels.Color(16, 16, 0));
+    pixels.show();   // Send the updated pixel colors to the hardware.
+
+    check_hand_calibration();
+    delay(500);
+
+    pixels.clear(); // Set all pixel colors to 'off'
+    pixels.setPixelColor(0, pixels.Color(0, 0, 32));
+    pixels.show();   // Send the updated pixel colors to the hardware.
+
+    calibrate_clock_hand(centering);
+
+    delay(500);
+  }
 }
 
-// notes
-// calibrate at the top of the hour?

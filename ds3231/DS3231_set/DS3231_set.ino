@@ -72,7 +72,7 @@ void getDateStuff(byte& year, byte& month, byte& date, byte& dOW,
 
 void setup() {
     // Start the serial port
-    Serial.begin(57600);
+    Serial.begin(115200);
     
     // Start the I2C interface
     Wire.begin();
