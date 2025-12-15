@@ -29,7 +29,7 @@ will be 0x23 (by default).
 BH1750 lightMeter1;
 BH1750 lightMeter2;
 BH1750 lightMeter3;
-BH1750 lightMeter4;
+// BH1750 lightMeter4;
 
 
 #define FAST_WINDOW 200
@@ -75,9 +75,9 @@ void setup() {
   lightMeter3.begin();
   float lux3 = lightMeter3.readLightLevel();
 
-  TCA9548A(3);
-  lightMeter4.begin();
-  float lux4 = lightMeter4.readLightLevel();
+  // TCA9548A(3);
+  // lightMeter4.begin();
+  // float lux4 = lightMeter4.readLightLevel();
 
   // Serial.println(F("BH1750 Test begin"));
 
@@ -103,10 +103,10 @@ void loop() {
   float lux3 = lightMeter3.readLightLevel();
   Serial.println(lux3);
 
-  TCA9548A(3);
-  float lux4 = lightMeter4.readLightLevel();
-  Serial.println(lux4);
+  // TCA9548A(3);
+  // float lux4 = lightMeter4.readLightLevel();
+  // Serial.println(lux4);
 
-  delay(1000);
+  // delay(1000);
 
 }

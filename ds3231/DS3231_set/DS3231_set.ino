@@ -85,8 +85,8 @@ void loop() {
     if (Serial.available()) {
         getDateStuff(year, month, date, dOW, hour, minute, second);
         
-        // myRTC.setClockMode(false);  // set to 24h
-        myRTC.setClockMode(true); // set to 12h
+        myRTC.setClockMode(false);  // set to 24h
+        // myRTC.setClockMode(true); // set to 12h
         
         myRTC.setYear(year);
         myRTC.setMonth(month);
