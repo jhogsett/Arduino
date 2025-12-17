@@ -39,12 +39,20 @@ BH1750 lightMeter3;
 #define SETTLED_WINDOW 0.25
 // #define TREND_BOOST 2
 
+// Nov 22, 2011 — PWM: 3, 5, 6, 9, 10, and 11. Provide 8-bit PWM output with the analogWrite() function. However, pin 3 is Reset.Read more
+
+#define LED_LEVEL_1   9
+#define LED_SETTLED_1 6
+#define LED_LEVEL_2   10
+#define LED_SETTLED_2 7
+#define LED_LEVEL_3   11
+#define LED_SETTLED_3 8
 
 TrendDetector *trend_detector_main;
 TrendDetector *trend_detector_high;
 TrendDetector *trend_detector_low;
 
-#define REPORT_RATE 1000
+#define REPORT_RATE 50
 int report = REPORT_RATE;
 
 void TCA9548A(uint8_t bus){
@@ -81,11 +89,16 @@ void setup() {
 
   // Serial.println(F("BH1750 Test begin"));
 
-  // trend_detector_main = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux);
-  // trend_detector_high = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux);
-  // trend_detector_low = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux);
+  trend_detector_main = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux1);
+  trend_detector_high = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux1);
+  trend_detector_low = new TrendDetector(FAST_WINDOW, SLOW_WINDOW, TREND_WINDOW, TREND_SENSE, SETTLED_WINDOW, lux1);
 
-  // pinMode(13, OUTPUT);
+  pinMode(LED_LEVEL_1, OUTPUT);
+  pinMode(LED_SETTLED_1, OUTPUT);
+  pinMode(LED_LEVEL_2, OUTPUT);
+  pinMode(LED_SETTLED_2, OUTPUT);
+  pinMode(LED_LEVEL_3, OUTPUT);
+  pinMode(LED_SETTLED_3, OUTPUT);
 }
 
 void loop() {
@@ -108,9 +121,41 @@ void loop() {
   // Serial.println(lux4);
 
   // delay(1000);
-  Serial.print(lux1);
-  Serial.print(",");
-  Serial.print(lux2);
-  Serial.print(",");
-  Serial.println(lux3);
+  // Serial.print(lux1);
+  // Serial.print(",");
+  // Serial.print(lux2);
+  // Serial.print(",");
+  // Serial.println(lux3);
+
+  trend_detector_main->sample(lux1);
+  float mean = trend_detector_main->slow_mean();
+
+  if(lux1 > mean){
+    trend_detector_high->sample(lux1);
+  } else {
+    trend_detector_low->sample(lux1);
+  }
+
+  float range = trend_detector_high->fast_mean() - trend_detector_low->fast_mean();
+  // float range = trend_detector_high->slow_mean() - trend_detector_low->slow_mean();
+  float spread = range / 256.0;
+  float base = trend_detector_low->slow_mean();
+  float val = (trend_detector_main->fast_mean() - base) * spread;
+  float ival = val * 256.0;
+  int i = int(ival);
+
+  if(i >= 0)
+    analogWrite(LED_LEVEL_1, 1 + (i * 4));
+
+  if(!--report){
+    digitalWrite(LED_SETTLED_1, trend_detector_main->settled() ? HIGH : LOW);
+
+    Serial.print(lux1);
+    Serial.print(",");
+    Serial.print(lux2);
+    Serial.print(",");
+    Serial.println(lux3);
+
+    report = REPORT_RATE;
+  }
 }
