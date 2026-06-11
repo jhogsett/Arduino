@@ -1,4 +1,3 @@
-
 /*
 DS3231_set.pde
 Eric Ayars
@@ -8,10 +7,8 @@ Test of set-time routines for a DS3231 RTC
 
 */
 
+#include <DS3231.h>
 #include <Wire.h>
-// #include <DS3231-RTC.h>
-#include <DS3231.h> 
-// DS3231 by Andrew Wickert 1.20
 
 DS3231 myRTC;
 
@@ -89,7 +86,7 @@ void loop() {
         getDateStuff(year, month, date, dOW, hour, minute, second);
         
         myRTC.setClockMode(false);  // set to 24h
-        // myRTC.setClockMode(true); // set to 12h
+        //setClockMode(true); // set to 12h
         
         myRTC.setYear(year);
         myRTC.setMonth(month);

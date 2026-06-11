@@ -10,10 +10,8 @@ working as they should.
 
 */
 
+#include <DS3231.h>
 #include <Wire.h>
-// #include <DS3231-RTC.h> 
-#include <DS3231.h> 
-// DS3231 by Andrew Wickert 1.20
 
 DS3231 myRTC;
 bool century = false;
