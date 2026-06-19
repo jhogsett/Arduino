@@ -38,6 +38,8 @@ int cols[4];
 int mapr[16];
 int mapc[16];
 
+int key = 0;
+
 void setup(void)
 {
   Serial.begin(115200);
@@ -106,12 +108,47 @@ void setup(void)
 
 void loop(void)
 {
-  int key = random(0, 16);
+  // int row = key / 4;
+  // int col = key % 4;
+
+  // Serial.print("row: ");
+  // Serial.print(row);
+  // Serial.print(" col: ");
+  // Serial.println(col);
+
   AD1.setFrequency(0, rows[mapr[key]]);
   AD2.setFrequency(0, cols[mapc[key]]);
-  delay(40);
+  // AD1.setFrequency(0, rows[row]);
+  // AD2.setFrequency(0, cols[col]);
+  delay(500);
    
   AD1.setFrequency(0, SILENT_FREQ);
   AD2.setFrequency(0, SILENT_FREQ);
-  delay(40);
+  delay(500);
+
+  if(key == 9){
+    delay(1000);
+
+    for(int k = 10; k <= 15; k++){
+      AD1.setFrequency(0, rows[mapr[k]]);
+      AD2.setFrequency(0, cols[mapc[k]]);
+
+      delay(1000);
+      
+      AD1.setFrequency(0, SILENT_FREQ);
+      AD2.setFrequency(0, SILENT_FREQ);
+      delay(1000);
+    }
+
+
+
+  }
+
+  // key = ++key % 16;
+
+  key = ++key % 10;
+
+  // key "0" comes shows as 10 on the decoder
+  // "*" is 11, "#" is 12, A-C are 13-15, "D" is zero
 }
+

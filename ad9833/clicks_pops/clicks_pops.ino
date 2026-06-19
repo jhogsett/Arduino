@@ -20,6 +20,7 @@ MD_AD9833	AD2(PIN_DATA, PIN_CLK, PIN_FSYNC2); // Arbitrary SPI pins
 MD_AD9833	AD3(PIN_DATA, PIN_CLK, PIN_FSYNC3); // Arbitrary SPI pins
 // MD_AD9833	AD4(PIN_DATA, PIN_CLK, PIN_FSYNC4); // Arbitrary SPI pins
 
+#define POP_FREQ 10000
 #define SILENT_FREQ 600000
 
 void setup(void)
@@ -35,8 +36,8 @@ void setup(void)
   AD2.setFrequency(0, SILENT_FREQ);
 
   AD3.begin();
-  AD3.setMode(MD_AD9833::MODE_SINE);
-  AD3.setFrequency(0, SILENT_FREQ);
+  AD3.setMode(MD_AD9833::MODE_OFF);
+  AD3.setFrequency(0, POP_FREQ);
 
   // AD4.begin();
   // AD4.setFrequency(0, SILENT_FREQ);
@@ -51,22 +52,34 @@ void silence(){
 }
 
 void loop(void){
-  AD1.setMode(MD_AD9833::MODE_SINE);
-  AD2.setMode(MD_AD9833::MODE_SINE);
-  AD3.setMode(MD_AD9833::MODE_SINE);
+  // AD1.setMode(MD_AD9833::MODE_SINE);
+  // AD2.setMode(MD_AD9833::MODE_SINE);
+  // AD3.setMode(MD_AD9833::MODE_SINE);
   // AD4.setMode(MD_AD9833::MODE_SINE);
 
   // AD1.setPhase(0, 0);
   // AD2.setPhase(0, 1800);
   // AD3.setPhase(0, 0);
 
-  AD1.setFrequency(0, 620.0);
-  AD2.setFrequency(0, 480.0);
-  AD3.setFrequency(0, 0.0);
+  // AD1.setFrequency(0, 620.0);
+  // AD2.setFrequency(0, 480.0);
+  // AD3.setFrequency(0, 0.0);
   // AD2.setFrequency(0, 740.0);
 
   // AD3.setFrequency(0, 1000.2);
   // AD4.setFrequency(0, 1000.3);
+  for(int i = 0; i < 5; i++){
+    // AD1.setMode(MD_AD9833::MODE_SQUARE1);
+    // AD2.setMode(MD_AD9833::MODE_SQUARE1);
+    AD3.setMode(MD_AD9833::MODE_SQUARE1);
+    // delayMicroseconds(1);
+    // AD1.setMode(MD_AD9833::MODE_OFF);
+    // AD2.setMode(MD_AD9833::MODE_OFF);
+    AD3.setMode(MD_AD9833::MODE_OFF);
+    delay(500);
+  }
+  delay(1000);
 
-  while(true);
+
+  // while(true);
 }
