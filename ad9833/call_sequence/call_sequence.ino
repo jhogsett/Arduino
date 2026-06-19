@@ -225,7 +225,7 @@ void loop(void){
   dial_random_phone();
   delay(500);
  
-  int outcome = random(0, 3);
+  int outcome = random(0, 4);
   switch(outcome){
     case 0:
       busy_tone();      
@@ -236,11 +236,11 @@ void loop(void){
     case 2:
       reorder_tone();
       break;
-    // case 3:
-    //   error_tone();
-    //   delay(4000);
-    //   offhook_tone();
-    //   break;
+    case 3:
+      error_tone();
+      // delay(4000);
+      // offhook_tone();
+      break;
   }
 
   delay(2000);
