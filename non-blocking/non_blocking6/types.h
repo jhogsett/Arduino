@@ -76,14 +76,8 @@ public:
   }
 
   bool step(){
-    // if(_abort_action && _abort_action(NULL)){
-    //   _state = STATE_ABORTED;
-    // }
-
-    if(_abort_action){
-      if(_abort_action(NULL)){
-        _state = STATE_ABORTED;
-      }
+    if(_abort_action && _abort_action(NULL)){
+      _state = STATE_ABORTED;
     }
 
     switch(_state){

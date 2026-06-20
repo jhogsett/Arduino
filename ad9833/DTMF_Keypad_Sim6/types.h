@@ -6,8 +6,6 @@ class KeypadHandler
 {
 public:
   KeypadHandler(I2CKeyPad * pkeypad, int min_keypress_time){
-Serial.println("Here");
-
     _pkeypad = pkeypad;
     _min_keypress_time = min_keypress_time;    
 
@@ -29,8 +27,12 @@ Serial.println("Here");
     return false;
   }
 
+  bool keypad_pressed(){
+    return _pkeypad->isPressed();
+  }
+
   int keypad_event_step(KeypadAction press_action, KeypadAction release_action){
-    bool key_pressed = _pkeypad->isPressed();
+    bool key_pressed = keypad_pressed();
 
     switch(_key_press_state){
       case STATE_IDLE:
@@ -62,7 +64,7 @@ Serial.println("Here");
         _pressed_key = _pkeypad->getLastKey();
         _pressed_char = _pkeypad->getLastChar();
         _key_press_state = STATE_CONTINUED_KEY_PRESS;
-        Serial.println("legit key press");
+        // Serial.println("legit key press");
         if(press_action != NULL){
           press_action(_pressed_key, _pressed_char);
         }
@@ -95,7 +97,7 @@ Serial.println("Here");
         // otherwise, act on the key release and continue with a legit key relase (idle)
         _pressed_key = I2C_KEYPAD_NOKEY;
         _key_press_state = STATE_IDLE;
-        Serial.println("legit key release");
+        // Serial.println("legit key release");
         if(release_action != NULL){
           release_action(_pressed_key, _pressed_char);
         }
@@ -172,12 +174,6 @@ private:
 };
 
 
-
-
-
-
-
-
 using NonBlockingAction = void (*)(uint32_t data);
 using NonBlockingAbort = bool (*)(uint32_t data);
 
@@ -214,6 +210,11 @@ public:
     return _cycle < _cycles;
   }
 
+  bool last_cycle()
+  {
+    return _cycle == _cycles - 1;
+  }
+
   bool cycle()
   {
     _cycle += 1;
@@ -230,11 +231,12 @@ private:
 class NonBlockingSequence
 {
 public:
-  NonBlockingSequence(NonBlockingAction* actions, int* times, int num_actions, NonBlockingAbort abort_action){
+  NonBlockingSequence(NonBlockingAction* actions, int* times, int num_actions, bool quick_last_action = false, NonBlockingAbort abort_action = NULL){
     _actions = actions;
     _times = times;
     _num_actions = num_actions;
     _abort_action = abort_action;
+    _quick_last_action = quick_last_action;
   }
 
   void start(int num_cycles, uint32_t data = NULL){
@@ -252,6 +254,10 @@ public:
 
   bool aborted(){
     return _aborted;
+  }
+
+  bool quick_last_action(){
+    return _quick_last_action && _loop.last_cycle() && _action_iter == _num_actions - 1;
   }
 
   bool step(){
@@ -273,11 +279,18 @@ public:
 
       case STATE_START_ACTION:
         _action = _actions[_action_iter];
-        _time = _times[_action_iter];
-        _timer.start(_time);
         if(_action != NULL){
           _action(_data);
         }
+
+        // end the loop if requested to skip last cycle and last action timing 
+        if(quick_last_action()){
+          _state = STATE_END_LOOP;
+          break;
+        }
+
+        _time = _times[_action_iter];
+        _timer.start(_time);
         _state = STATE_RUNNING;
         break;      
 
@@ -321,14 +334,16 @@ public:
   };
 
 private:
+  NonBlockingAction* _actions;
+  int* _times;
   int _num_actions;
   int _num_cycles;
   uint32_t _data;
   int _action_iter;
-  State _state;
-  NonBlockingAction* _actions;
-  int* _times;
   NonBlockingAbort _abort_action;
+  bool _quick_last_action;
+
+  State _state;
   NonBlockingLoop _loop;
   NonBlockingAction _action;
   int _time;

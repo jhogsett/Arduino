@@ -60,7 +60,7 @@ bool begin_keypad(I2CKeyPad& keypad, char * keymap, const uint8_t address = 0x20
 void setup() {
   randomizer.randomize();
   Serial.begin(115200);
-  Serial.println("SETUP");
+  // Serial.println("SETUP");
 
   Wire.begin();
   Wire.setClock(400000);
@@ -127,13 +127,13 @@ void setup() {
 
 }
 
-#define STATE_WAIT 0
-#define STATE_DOCALL 1
-#define STATE_DIALTONE 2
-#define STATE_DIALING 3
-#define STATE_SENDING 4
+// #define STATE_IDLE 0
+// #define STATE_DOCALL 1
+// #define STATE_DIALTONE 2
+// #define STATE_DIALING 3
+// #define STATE_SENDING 4
 
-#define CMD_DOCALL 'A'
+// #define CMD_DOCALL 'A'
 
 void dual_tone(int freq1, int freq2, int times, int inter_delay, int final_delay = -1){
   final_delay = (final_delay == -1 ? inter_delay : final_delay);
@@ -161,17 +161,17 @@ void dial_tone(){
   AD2.setFrequency(0, 440.0);
 }
 
-void confirmation_tone(){
-  dual_tone(350, 440, 3, 100);
-}
+// void confirmation_tone(){
+//   dual_tone(350, 440, 3, 100);
+// }
 
 void disconnect_tone(){
   dual_tone(2600, 0, 1, 200);
 }
 
-void deactivation_tone(){
-  dual_tone(480, 620, 1, 200);
-}
+// void deactivation_tone(){
+//   dual_tone(480, 620, 1, 200);
+// }
 
 void cancel_tone(){
   // delay(200);
@@ -188,43 +188,43 @@ void halt_sound(){
   AD2.setFrequency(0, SILENT_FREQ);
 }
 
-void busy_tone(int times=4){
-  for(int i = 0; i < times; i++){
-    AD1.setFrequency(0, 480.0);
-    AD2.setFrequency(0, 620.0);
-    delay(500);
+// void busy_tone(int times=4){
+//   for(int i = 0; i < times; i++){
+//     AD1.setFrequency(0, 480.0);
+//     AD2.setFrequency(0, 620.0);
+//     delay(500);
 
-    AD1.setFrequency(0, SILENT_FREQ);
-    AD2.setFrequency(0, SILENT_FREQ);
-    delay(500);
-  }
-}
+//     AD1.setFrequency(0, SILENT_FREQ);
+//     AD2.setFrequency(0, SILENT_FREQ);
+//     delay(500);
+//   }
+// }
 
-void ring_tone(int times=4){
-  for(int i = 0; i < times; i++){
-    AD1.setFrequency(0, 480.0);
-    AD2.setFrequency(0, 440.0);
-    delay(2000);
+// void ring_tone(int times=4){
+//   for(int i = 0; i < times; i++){
+//     AD1.setFrequency(0, 480.0);
+//     AD2.setFrequency(0, 440.0);
+//     delay(2000);
 
-    AD1.setFrequency(0, SILENT_FREQ);
-    AD2.setFrequency(0, SILENT_FREQ);
+//     AD1.setFrequency(0, SILENT_FREQ);
+//     AD2.setFrequency(0, SILENT_FREQ);
 
-    if(i < times-1)
-      delay(4000);
-  }
-}
+//     if(i < times-1)
+//       delay(4000);
+//   }
+// }
 
-void reorder_tone(int times=8){
-  for(int i = 0; i < times; i++){
-    AD1.setFrequency(0, 480.0);
-    AD2.setFrequency(0, 620.0);
-    delay(250);
+// void reorder_tone(int times=8){
+//   for(int i = 0; i < times; i++){
+//     AD1.setFrequency(0, 480.0);
+//     AD2.setFrequency(0, 620.0);
+//     delay(250);
 
-    AD1.setFrequency(0, SILENT_FREQ);
-    AD2.setFrequency(0, SILENT_FREQ);
-    delay(250);
-  }
-}
+//     AD1.setFrequency(0, SILENT_FREQ);
+//     AD2.setFrequency(0, SILENT_FREQ);
+//     delay(250);
+//   }
+// }
 
 void error_tone(){
   delay(200);
@@ -243,13 +243,13 @@ void error_tone(){
   AD1.setFrequency(0, SILENT_FREQ);
 }
 
-bool abort_sequence(uint32_t data){
-  if(Serial.available()){
-    while(Serial.available() && Serial.read());
-    return true;
-  }
-  return false;
-}
+// bool abort_sequence(uint32_t data){
+//   if(Serial.available()){
+//     while(Serial.available() && Serial.read());
+//     return true;
+//   }
+//   return false;
+// }
 
 void sound_off(){
   AD1.setFrequency(0, SILENT_FREQ);
@@ -280,19 +280,19 @@ void error_tone3_on(){
 
 NonBlockingAction ring_actions[2] = { ring_on, sound_off};
 int ring_times[2] = { 2000, 4000 };
-NonBlockingSequence ring_sequence(ring_actions, ring_times, 2, abort_sequence);
+NonBlockingSequence ring_sequence(ring_actions, ring_times, 2, true);
 
 NonBlockingAction busy_actions[2] = { busy_on, sound_off};
 int busy_times[2] = { 500, 500 };
-NonBlockingSequence busy_sequence(busy_actions, busy_times, 2, abort_sequence);
+NonBlockingSequence busy_sequence(busy_actions, busy_times, 2, true);
 
 NonBlockingAction reorder_actions[2] = { busy_on, sound_off};
 int reorder_times[2] = { 250, 250 };
-NonBlockingSequence reorder_sequence(reorder_actions, reorder_times, 2, abort_sequence);
+NonBlockingSequence reorder_sequence(reorder_actions, reorder_times, 2, true);
 
 NonBlockingAction error_actions[4] = { error_tone1_on, error_tone2_on, error_tone3_on, sound_off};
 int error_times[4] = { 380, 276, 380, 0 };
-NonBlockingSequence error_sequence(error_actions, error_times, 4, abort_sequence);
+NonBlockingSequence error_sequence(error_actions, error_times, 4, false);
 
   // // sequence.start(5, NULL);
   // ring_sequence.start(4);
@@ -364,8 +364,35 @@ NonBlockingSequence error_sequence(error_actions, error_times, 4, abort_sequence
 // else                            currentOutcome = OUTCOME_ERROR;
 //  */
 
-void call_outcome(){
+// void call_outcome(){
 
+//   // random delays, clicks, pops, other routing effects here
+//   delay(random(500, 1000));
+//   // pop();
+//   click();
+//   delay(random(500, 1000));
+//   pop();
+//   // delay(random(250, 500));
+//   delay(300);
+
+//   int outcome = random(0, 1000);
+//   if(outcome < 730){
+//     ring_tone();
+//   }else if(outcome < 980){
+//     busy_tone();      
+//   }else if(outcome < 985){
+//     reorder_tone();
+//   }else{
+//     error_tone();
+//   }
+
+//   // delay(random(250, 750));
+//   delay(500);
+//   pop();
+
+// }
+
+void pre_routing_sound(){
   // random delays, clicks, pops, other routing effects here
   delay(random(500, 1000));
   // pop();
@@ -374,24 +401,12 @@ void call_outcome(){
   pop();
   // delay(random(250, 500));
   delay(300);
-
-  int outcome = random(0, 1000);
-  if(outcome < 730){
-    ring_tone();
-  }else if(outcome < 980){
-    busy_tone();      
-  }else if(outcome < 985){
-    reorder_tone();
-  }else{
-    error_tone();
-  }
-
-  // delay(random(250, 750));
-  delay(500);
-  pop();
-
 }
 
+void post_routing_sound(){
+  delay(500);
+  pop();
+}
 
 
 void action_dial(char key, char ch){
@@ -402,7 +417,7 @@ void action_dial(char key, char ch){
 
 void action_undial(char key, char ch){
   if(KeypadHandler::char_in_chars(ch, "0123456789*#")){
-    halt_sound();
+    sound_off();
   }
 }
 
@@ -411,7 +426,7 @@ void action_dtmf(char key, char ch){
 }
 
 void action_undtmf(char key, char ch){
-  halt_sound();
+  sound_off();
 }
 
 
@@ -470,6 +485,8 @@ void determine_routing(char ch){
 #define MODE_INITIATE_CALL 1
 #define MODE_CALL_START 2
 #define MODE_CALL_IN_PROGRESS 3
+#define MODE_ROUTING_START 4
+#define MODE_ROUTING_IN_PROGRESS 5
 #define MODE_COMMAND_B 20
 #define MODE_COMMAND_C 30
 #define MODE_COMMAND_D 40
@@ -484,11 +501,11 @@ void loop()
       if(NULL != (ch = keypad_handler.wait_for_char("ABCD", 1000, KeypadHandler::STATE_CONTINUED_KEY_PRESS, NULL, NULL))){
         switch(ch){
           case 'A':
-            Serial.println("before");
+            // Serial.println("before");
             mode = MODE_INITIATE_CALL;
             // delay(250);
             // dial_tone();
-            Serial.println("after");
+            // Serial.println("after");
             break;
           case 'B':
             mode = MODE_COMMAND_B;
@@ -508,15 +525,15 @@ void loop()
       dial_tone();
       mode = MODE_CALL_START;
       // edge triggered key may still be pressed
-      while(!keypad_handler.keypad_state_wait(STATE_WAIT, action_dial, action_undial));
+      while(!keypad_handler.keypad_state_wait(KeypadHandler::STATE_IDLE, action_dial, action_undial));
       break;
 
     case MODE_CALL_START:
       reset_call();
-      ch = keypad_handler.wait_for_char("0123456789*#A", 1000, STATE_WAIT, action_dial, action_undial);
-      Serial.println("here");
+      ch = keypad_handler.wait_for_char("0123456789*#A", 1000, KeypadHandler::STATE_IDLE, action_dial, action_undial);
+      // Serial.println("here");
       if(ch != NULL){
-        Serial.println(ch);
+        // Serial.println(ch);
         if(KeypadHandler::char_in_chars(ch, "A")){
           // delay(200);
           // confirmation_tone();
@@ -533,7 +550,7 @@ void loop()
         } 
         else {
           add_digit(ch);
-          Serial.println(digits);
+          // Serial.println(digits);
           determine_routing(ch);
           mode = MODE_CALL_IN_PROGRESS;
         }
@@ -541,7 +558,7 @@ void loop()
       break;
 
     case MODE_CALL_IN_PROGRESS:
-      ch = keypad_handler.wait_for_char("0123456789*#A", 1000, STATE_WAIT, action_dial, action_undial);
+      ch = keypad_handler.wait_for_char("0123456789*#A", 1000, KeypadHandler::STATE_IDLE, action_dial, action_undial);
       // Serial.println("here");
       if(ch != NULL){
         if(KeypadHandler::char_in_chars(ch, "A")){
@@ -559,12 +576,34 @@ void loop()
           mode = MODE_WAITING;
         } else {
           add_digit(ch);
-          Serial.println(digits);
+          // Serial.println(digits);
           if(num_digits >= digit_count){
-            call_outcome();
-            mode = MODE_WAITING;
+            // call_outcome();
+            // mode = MODE_WAITING;
+            mode = MODE_ROUTING_START;
           }
         }
+      }
+      break;
+
+    case MODE_ROUTING_START:
+        pre_routing_sound();
+        ring_sequence.start(4);
+        mode = MODE_ROUTING_IN_PROGRESS; 
+      break;
+
+    case MODE_ROUTING_IN_PROGRESS:
+      if(keypad_handler.keypad_pressed()){
+        sound_off();
+        // edge triggered key may still be pressed
+        while(!keypad_handler.keypad_state_wait(KeypadHandler::STATE_IDLE, action_dial, action_undial));
+        cancel_tone();
+        mode = MODE_WAITING;
+      }
+      if(!ring_sequence.step()){
+        sound_off();
+        pre_routing_sound();
+        mode = MODE_WAITING;
       }
       break;
 
