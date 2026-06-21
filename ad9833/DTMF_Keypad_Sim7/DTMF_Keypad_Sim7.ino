@@ -5,6 +5,28 @@
 #include "types.h"
 #include <random_seed.h>
 
+// +----------+--------------------+-------------------------+
+// | Keypad   | MF Signaling Tone  | Frequency Pair (Hz)     |
+// +----------+--------------------+-------------------------+
+// |    1     | Digit 1            |  700 Hz  +  900 Hz      |
+// |    2     | Digit 2            |  700 Hz  + 1100 Hz      |
+// |    3     | Digit 3            |  900 Hz  + 1100 Hz      |
+// |    4     | Digit 4            |  700 Hz  + 1300 Hz      |
+// |    5     | Digit 5            |  900 Hz  + 1300 Hz      |
+// |    6     | Digit 6            | 1100 Hz  + 1300 Hz      |
+// |    7     | Digit 7            |  700 Hz  + 1500 Hz      |
+// |    8     | Digit 8            |  900 Hz  + 1500 Hz      |
+// |    9     | Digit 9            | 1100 Hz  + 1500 Hz      |
+// |    0     | Digit 0 (or 10)    | 1300 Hz  + 1500 Hz      |
+// +----------+--------------------+-------------------------+
+// |    *     | KP1 (Domestic)     | 1100 Hz  + 1700 Hz      |
+// |  [Custom]| KP2 (International)| 1300 Hz  + 1700 Hz      |
+// |    #     | ST (Start)         | 1500 Hz  + 1700 Hz      |
+// +----------+--------------------+-------------------------+
+// |    D     | SF Control Tone    | 2600 Hz  (Single Pure)  |
+// +----------+--------------------+-------------------------+
+
+
 #define RANDOM_SEED_PIN A1            // floating pin for seeding the RNG
 
 static RandomSeed<RANDOM_SEED_PIN> randomizer;
@@ -28,7 +50,8 @@ MD_AD9833	AD3(PIN_DATA, PIN_CLK, PIN_FSYNC3); // Arbitrary SPI pins
 
 KeypadHandler keypad_handler(&keyPad, MIN_KEYPRESS_TIME);
 
-#define SILENT_FREQ 1000000
+// #define SILENT_FREQ 1000000
+#define SILENT_FREQ 50000
 
 class DtmfFreqencies
 {
@@ -110,9 +133,18 @@ void busy_on(){
   AD2.setFrequency(0, 620.0);
 }
 
+void uk_busy_on(){
+  AD1.setFrequency(0, 400.0);
+}
+
 void ring_on(){
   AD1.setFrequency(0, 480.0);
   AD2.setFrequency(0, 440.0);
+}
+
+void uk_ring_on(){
+  AD1.setFrequency(0, 400.0);
+  AD2.setFrequency(0, 450.0);
 }
 
 void error_tone1_on(){
@@ -135,17 +167,33 @@ NonBlockingAction ring_actions[2] = { ring_on, sound_off};
 int ring_times[2] = { 2000, 4000 };
 NonBlockingSequence ring_sequence(ring_actions, ring_times, 2, true);
 
+NonBlockingAction uk_ring_actions[4] = { uk_ring_on, sound_off, uk_ring_on, sound_off};
+int uk_ring_times[4] = { 400, 200, 400, 2000 };
+NonBlockingSequence uk_ring_sequence(uk_ring_actions, uk_ring_times, 4, true);
+
 NonBlockingAction busy_actions[2] = { busy_on, sound_off};
 int busy_times[2] = { 500, 500 };
 NonBlockingSequence busy_sequence(busy_actions, busy_times, 2, true);
+
+NonBlockingAction uk_busy_actions[2] = { uk_busy_on, sound_off};
+int uk_busy_times[2] = { 375, 375 };
+NonBlockingSequence uk_busy_sequence(uk_busy_actions, uk_busy_times, 2, true);
 
 NonBlockingAction reorder_actions[2] = { busy_on, sound_off};
 int reorder_times[2] = { 250, 250 };
 NonBlockingSequence reorder_sequence(reorder_actions, reorder_times, 2, true);
 
+NonBlockingAction uk_reorder_actions[4] = { uk_busy_on, sound_off, uk_busy_on, sound_off};
+int uk_reorder_times[4] = { 400, 350, 225, 525 };
+NonBlockingSequence uk_reorder_sequence(uk_reorder_actions, uk_reorder_times, 4, true);
+
 NonBlockingAction error_actions[4] = { error_tone1_on, error_tone2_on, error_tone3_on, sound_off};
 int error_times[4] = { 380, 276, 380, 0 };
 NonBlockingSequence error_sequence(error_actions, error_times, 4, false);
+
+NonBlockingAction uk_error_actions[1] = { uk_busy_on };
+int uk_error_times[1] = { 1000 };
+NonBlockingSequence uk_error_sequence(uk_error_actions, uk_error_times, 1, false);
 
 NonBlockingAction cancel_actions[4] = { cancel_tone_on, sound_off, cancel_tone_on, sound_off};
 int cancel_times[4] = { 50, 50, 50, 50 };
@@ -185,10 +233,6 @@ void disconnect_tone(){
   dual_tone(2600, 0, 1, 200);
 }
 
-// void deactivation_tone(){
-//   dual_tone(480, 620, 1, 200);
-// }
-
 void cancel_tone(){
   cancel_sequence.start(1);
   while(cancel_sequence.step());
@@ -208,23 +252,25 @@ void error_tone(){
   while(error_sequence.step());
 }
 
-//  * ------------------------------------------------------------------------------
-//  * Route Type      | RINGBACK  | BUSY      | REORDER   | SIT ERROR (Remainder)
-//  * ----------------+-----------+-----------+-----------+-------------------------
-//  * Local           | < 730     | < 980     | < 985     | >= 985
-//  * Long Dist       | < 680     | < 910     | < 970     | >= 970
-//  * International   | < 580     | < 830     | < 950     | >= 950
-//  * ==============================================================================
- 
-//  int ringCeiling, busyCeiling, reorderCeiling;
+#define MAX_DIGITS 16
+char digits[MAX_DIGITS+1];
+char num_digits = 0;
 
-// if (isInternationalRoute) {
-//     ringCeiling = 580; busyCeiling = 830; reorderCeiling = 950;
-// } else if (expectedDigits == 11) { // Long Distance
-//     ringCeiling = 680; busyCeiling = 910; reorderCeiling = 970;
-// } else { // Local
-//     ringCeiling = 730; busyCeiling = 980; reorderCeiling = 985;
-// }
+#define CALL_NONE 0
+// 867-5209
+#define CALL_LOCAL 1
+#define LOCAL_COUNT 7
+// 1-800-555-1212
+#define CALL_LONG 2
+#define LONG_PREFIX '1'
+#define LONG_COUNT 11
+// 0-44-8302-1212
+#define CALL_INTL 3
+#define INTL_PREFIX '0'
+#define INTL_COUNT 11
+
+int digit_count = 0;
+int call_type = CALL_NONE;
 
 #define OUTCOME_RING 0
 #define OUTCOME_BUSY 1
@@ -244,53 +290,110 @@ int determine_outcome(char * digits, int num_digits){
   }
 
   int r = random(0, 1000);
-  if(r < 730){
-    outcome = OUTCOME_RING;
-  } else if(r < 980){
-    outcome = OUTCOME_BUSY;      
-  } else if(r < 985){
-    outcome = OUTCOME_REORDER;
+
+  if(call_type == CALL_INTL){
+    if(r < 580){
+      outcome = OUTCOME_RING;
+    } else if(r < 830){
+      outcome = OUTCOME_BUSY;
+    } else if(r < 950){
+      outcome = OUTCOME_REORDER;
+    } else {
+      outcome = OUTCOME_ERROR;
+    }
+  } else if(call_type == CALL_LONG)
+  {
+    if(r < 680){
+      outcome = OUTCOME_RING;
+    } else if(r < 910){
+      outcome = OUTCOME_BUSY;
+    } else if(r < 970){
+      outcome = OUTCOME_REORDER;
+    } else {
+      outcome = OUTCOME_ERROR;
+    }
   } else {
-    outcome = OUTCOME_ERROR;
+    if(r < 730){
+      outcome = OUTCOME_RING;
+    } else if(r < 980){
+      outcome = OUTCOME_BUSY;
+    } else if(r < 985){
+      outcome = OUTCOME_REORDER;
+    } else {
+      outcome = OUTCOME_ERROR;
+    }
   }
   return outcome;
 }
 
 void start_outcome(int outcome){
-  switch(outcome){
-    case OUTCOME_RING:
-      ring_sequence.start(6);
-      break;
-    case OUTCOME_BUSY:
-      busy_sequence.start(12);
-      break;
-    case OUTCOME_REORDER:
-      reorder_sequence.start(24);
-      break;
-    case OUTCOME_ERROR:
-      error_sequence.start(1);
-      break;
+  if(call_type == CALL_INTL){
+    switch(outcome){
+      case OUTCOME_RING:
+        uk_ring_sequence.start(8);
+        break;
+      case OUTCOME_BUSY:
+        uk_busy_sequence.start(12);
+        break;
+      case OUTCOME_REORDER:
+        uk_reorder_sequence.start(24);
+        break;
+      case OUTCOME_ERROR:
+        uk_error_sequence.start(10);
+        break;
+    }
+  } else {
+    switch(outcome){
+      case OUTCOME_RING:
+        ring_sequence.start(6);
+        break;
+      case OUTCOME_BUSY:
+        busy_sequence.start(12);
+        break;
+      case OUTCOME_REORDER:
+        reorder_sequence.start(24);
+        break;
+      case OUTCOME_ERROR:
+        error_sequence.start(1);
+        break;
+    }
   }
 }
 
 bool step_outcome(int outcome){
   bool keep_going;
 
-  switch(outcome){
-    case OUTCOME_RING:
-      keep_going = ring_sequence.step();
-      break;
-    case OUTCOME_BUSY:
-      keep_going = busy_sequence.step();
-      break;
-    case OUTCOME_REORDER:
-      keep_going = reorder_sequence.step();
-      break;
-    case OUTCOME_ERROR:
-      keep_going = error_sequence.step();
-      break;
+  if(call_type == CALL_INTL){
+    switch(outcome){
+      case OUTCOME_RING:
+        keep_going = uk_ring_sequence.step();
+        break;
+      case OUTCOME_BUSY:
+        keep_going = uk_busy_sequence.step();
+        break;
+      case OUTCOME_REORDER:
+        keep_going = uk_reorder_sequence.step();
+        break;
+      case OUTCOME_ERROR:
+        keep_going = uk_error_sequence.step();
+        break;
+    }
+  } else {
+    switch(outcome){
+      case OUTCOME_RING:
+        keep_going = ring_sequence.step();
+        break;
+      case OUTCOME_BUSY:
+        keep_going = busy_sequence.step();
+        break;
+      case OUTCOME_REORDER:
+        keep_going = reorder_sequence.step();
+        break;
+      case OUTCOME_ERROR:
+        keep_going = error_sequence.step();
+        break;
+    }
   }
-
   return keep_going;
 }
 
@@ -330,26 +433,6 @@ void action_undtmf(char key, char ch){
   sound_off();
 }
 
-#define MAX_DIGITS 16
-char digits[MAX_DIGITS+1];
-char num_digits = 0;
-
-#define CALL_NONE 0
-// 867-5209
-#define CALL_LOCAL 1
-#define LOCAL_COUNT 7
-// 1-800-555-1212
-#define CALL_LONG 2
-#define LONG_PREFIX '1'
-#define LONG_COUNT 11
-// 0-44-8302-1212
-#define CALL_INTL 3
-#define INTL_PREFIX '0'
-#define INTL_COUNT 11
-
-int digit_count = 0;
-int call_type = CALL_NONE;
-
 void reset_call(){
   num_digits = 0;
   digit_count = 0;
@@ -363,7 +446,7 @@ void add_digit(char ch){
   }
 }
 
-// maybe update routing as more digits come in
+// maybe update routing as more digits come in, 911 etc.
 
 void determine_routing(char ch){
   switch(ch){
