@@ -10,10 +10,10 @@ static RandomSeed<RANDOM_SEED_PIN> randomizer;
 // Pins for SPI comm with the AD9833 IC
 const uint8_t PIN_DATA = 11;  ///< SPI Data pin number
 const uint8_t PIN_CLK = 13;  	///< SPI Clock pin number
-const uint8_t PIN_FSYNC1 = 8; ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC2 = 12;  ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC3 = 8;  ///< SPI Load pin number (FSYNC in AD9833 usage)
-const uint8_t PIN_FSYNC4 = 7;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC1 = A2; ///< SPI Load pin number (FSYNC in AD9833 usage)
+const uint8_t PIN_FSYNC2 = A3;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+// const uint8_t PIN_FSYNC3 = A2;  ///< SPI Load pin number (FSYNC in AD9833 usage)
+// const uint8_t PIN_FSYNC4 = A3;  ///< SPI Load pin number (FSYNC in AD9833 usage)
 
 MD_AD9833	AD1(PIN_DATA, PIN_CLK, PIN_FSYNC1); // Arbitrary SPI pins
 MD_AD9833	AD2(PIN_DATA, PIN_CLK, PIN_FSYNC2); // Arbitrary SPI pins

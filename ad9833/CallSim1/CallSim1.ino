@@ -41,6 +41,8 @@ const uint8_t PIN_CLK = 13;  	///< SPI Clock pin number
 const uint8_t PIN_FSYNC1 = A2; //8; ///< SPI Load pin number (FSYNC in AD9833 usage)
 const uint8_t PIN_FSYNC2 = A3; //7;  ///< SPI Load pin number (FSYNC in AD9833 usage)
 
+const uint8_t HOOK_LIGHT_PIN = A1;
+
 MD_AD9833	AD1(PIN_DATA, PIN_CLK, PIN_FSYNC1); // Arbitrary SPI pins
 MD_AD9833	AD2(PIN_DATA, PIN_CLK, PIN_FSYNC2); // Arbitrary SPI pins
 
@@ -114,6 +116,21 @@ void setup() {
 
   AD2.setFrequency(0, SILENT_FREQ);
   AD2.setMode(MD_AD9833::MODE_SINE);
+
+  pinMode(HOOK_LIGHT_PIN, OUTPUT);
+  digitalWrite(HOOK_LIGHT_PIN, HIGH);
+}
+
+void hook_light_on(){
+  digitalWrite(HOOK_LIGHT_PIN, LOW);
+}
+
+void hook_light_off(){
+  digitalWrite(HOOK_LIGHT_PIN, HIGH);
+}
+
+void hook_link_wink(){
+  digitalWrite(HOOK_LIGHT_PIN, digitalRead(HOOK_LIGHT_PIN) == HIGH ? LOW : HIGH);
 }
 
 void sound_off(){
@@ -206,11 +223,15 @@ void dual_tone(int freq1, int freq2, int times, int inter_delay, int final_delay
 }
 
 void pop(){
+  hook_link_wink();
   dual_tone(200, 200, 1, 7, 0);
+  hook_link_wink();
 }
 
 void click(){
+  hook_link_wink();
   dual_tone(600, 600, 1, 3, 0);
+  hook_link_wink();
 }
 
 void dial_tone(){
@@ -492,6 +513,7 @@ void loop()
       }
       break;
     case MODE_INITIATE_CALL:
+      hook_light_on();
       dial_tone();
       mode = MODE_CALL_START;
       // edge triggered key may still be pressed
@@ -503,12 +525,14 @@ void loop()
       ch = keypad_handler.wait_for_char("0123456789*#A", 1000, KeypadHandler::STATE_IDLE, action_dial, action_undial);
       if(ch != NULL){
         if(KeypadHandler::char_in_chars(ch, "A")){
+          hook_light_off();
           cancel_tone();
           mode = MODE_WAITING;
           break;
         } else if(KeypadHandler::char_in_chars(ch, "*#")){
           error_tone();
           delay(200);
+          hook_light_off();
           cancel_tone();
           mode = MODE_WAITING;
         } 
@@ -524,12 +548,14 @@ void loop()
       ch = keypad_handler.wait_for_char("0123456789*#A", 1000, KeypadHandler::STATE_IDLE, action_dial, action_undial);
       if(ch != NULL){
         if(KeypadHandler::char_in_chars(ch, "A")){
+          hook_light_off();
           cancel_tone();
           mode = MODE_WAITING;
           break;
         } else if(KeypadHandler::char_in_chars(ch, "*#")){
           error_tone();
           delay(200);
+          hook_light_off();
           cancel_tone();
           mode = MODE_WAITING;
         } else {
@@ -552,13 +578,15 @@ void loop()
         sound_off();
         // edge triggered key may still be pressed
         while(!keypad_handler.keypad_state_wait(KeypadHandler::STATE_IDLE, action_dial, action_undial));
+        hook_light_off();
         cancel_tone();
         mode = MODE_WAITING;
       }
       if(!step_outcome(outcome)){
         sound_off();
-        pre_routing_sound();
-        mode = MODE_WAITING;
+        post_routing_sound();
+        hook_light_off();
+       mode = MODE_WAITING;
       }
       break;
 
