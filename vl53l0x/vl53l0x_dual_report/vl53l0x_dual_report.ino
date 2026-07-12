@@ -62,21 +62,23 @@ void read_dual_sensors() {
   lox2.rangingTest(&measure2, false); // pass in 'true' to get debug data printout!
 
   // print sensor one reading
-  Serial.print(F("1: "));
+  // Serial.print(F("1: "));
   if(measure1.RangeStatus != 4) {     // if not out of range
     Serial.print(measure1.RangeMilliMeter);
   } else {
-    Serial.print(F("Out of range"));
+    Serial.print("0");
   }
   
-  Serial.print(F(" "));
+  Serial.print(",");
+
+  // Serial.print(F(" "));
 
   // print sensor two reading
-  Serial.print(F("2: "));
+  // Serial.print(F("2: "));
   if(measure2.RangeStatus != 4) {
     Serial.print(measure2.RangeMilliMeter);
   } else {
-    Serial.print(F("Out of range"));
+    Serial.print("0");
   }
   
   Serial.println();
@@ -91,21 +93,24 @@ void setup() {
   pinMode(SHT_LOX1, OUTPUT);
   pinMode(SHT_LOX2, OUTPUT);
 
-  Serial.println(F("Shutdown pins inited..."));
+  // Serial.println(F("Shutdown pins inited..."));
 
   digitalWrite(SHT_LOX1, LOW);
   digitalWrite(SHT_LOX2, LOW);
 
-  Serial.println(F("Both in reset mode...(pins are low)"));
+  // Serial.println(F("Both in reset mode...(pins are low)"));
   
   
-  Serial.println(F("Starting..."));
+  // Serial.println(F("Starting..."));
   setID();
 
   // Explicit high-speed call for Adafruit's library
   // 20000 microseconds = 20ms timing budget
-  lox1.setMeasurementTimingBudgetMicroSeconds(20000); // 20 ms timing budget for high speed
-  lox2.setMeasurementTimingBudgetMicroSeconds(20000); // 20 ms timing budget for high speed
+  lox1.setMeasurementTimingBudgetMicroSeconds(100000); // 20 ms timing budget for high speed
+  lox2.setMeasurementTimingBudgetMicroSeconds(100000); // 20 ms timing budget for high speed
+
+  Serial.print("X,Y");
+
 }
 
 void loop() {

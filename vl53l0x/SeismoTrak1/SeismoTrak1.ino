@@ -16,6 +16,10 @@ Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 VL53L0X_RangingMeasurementData_t measure1;
 VL53L0X_RangingMeasurementData_t measure2;
 
+constexpr uint8_t SLEEP_PIN = A0;
+constexpr uint16_t SLEEP_TIME = 10000;
+constexpr uint32_t TIME_BUDGET = 100000;
+
 /*
     Reset all sensors by setting all of their XSHUT pins low for delay(10), then set all XSHUT high to bring out of reset
     Keep sensor #1 awake by keeping XSHUT pin high
@@ -62,21 +66,24 @@ void read_dual_sensors() {
   lox2.rangingTest(&measure2, false); // pass in 'true' to get debug data printout!
 
   // print sensor one reading
-  Serial.print(F("1: "));
+  // Serial.print(F("1: "));
+  Serial.print("X:");
   if(measure1.RangeStatus != 4) {     // if not out of range
     Serial.print(measure1.RangeMilliMeter);
   } else {
-    Serial.print(F("Out of range"));
+    Serial.print("9999");
   }
   
-  Serial.print(F(" "));
+
+  // Serial.print(F(" "));
 
   // print sensor two reading
-  Serial.print(F("2: "));
+  // Serial.print(F("2: "));
+  Serial.print(" Y:");
   if(measure2.RangeStatus != 4) {
     Serial.print(measure2.RangeMilliMeter);
   } else {
-    Serial.print(F("Out of range"));
+    Serial.print("9999");
   }
   
   Serial.println();
@@ -91,25 +98,37 @@ void setup() {
   pinMode(SHT_LOX1, OUTPUT);
   pinMode(SHT_LOX2, OUTPUT);
 
-  Serial.println(F("Shutdown pins inited..."));
+  pinMode(SLEEP_PIN, INPUT_PULLUP);
+
+  // Serial.println(F("Shutdown pins inited..."));
 
   digitalWrite(SHT_LOX1, LOW);
   digitalWrite(SHT_LOX2, LOW);
 
-  Serial.println(F("Both in reset mode...(pins are low)"));
+  // Serial.println(F("Both in reset mode...(pins are low)"));
   
   
-  Serial.println(F("Starting..."));
+  // Serial.println(F("Starting..."));
   setID();
 
   // Explicit high-speed call for Adafruit's library
   // 20000 microseconds = 20ms timing budget
-  lox1.setMeasurementTimingBudgetMicroSeconds(20000); // 20 ms timing budget for high speed
-  lox2.setMeasurementTimingBudgetMicroSeconds(20000); // 20 ms timing budget for high speed
+  lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
+  lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
+
+  // Serial.println("\"X\",\"Y\"");
+
 }
 
 void loop() {
-   
+  
+  if(digitalRead(SLEEP_PIN) == LOW){
+    Serial.println("Enter sleep mode");
+    uint32_t start_time = millis();
+    while(millis() - start_time < SLEEP_TIME);
+    Serial.println("Exit sleep mode");
+  }
+
   read_dual_sensors();
-  delay(10);
+  // delay(10);
 }
