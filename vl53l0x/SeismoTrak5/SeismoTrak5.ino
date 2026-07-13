@@ -19,12 +19,13 @@ VL53L0X_RangingMeasurementData_t measureX;
 VL53L0X_RangingMeasurementData_t measureY;
 
 constexpr uint8_t SLEEP_PIN = A0;
-constexpr uint16_t SLEEP_TIME = 10000;
+// constexpr uint16_t SLEEP_TIME = 10000;
 constexpr uint32_t TIME_BUDGET = 100000;
+constexpr uint32_t CAL_TIME_BUDGET = 200000;
 
 constexpr uint16_t EVENT_WINDOW_SIZE = 10;
 constexpr uint16_t BASELINE_WINDOW_SIZE = 300;
-constexpr uint16_t PRIMED_VALUE = 50;
+constexpr uint16_t PRIMED_VALUE = 45;
 constexpr float NOISE_FLOOR = 1.0;
 constexpr float EVENT_THRESHOLD = 1.5;
 
@@ -33,13 +34,10 @@ constexpr uint8_t Y_LED_PIN = 3;
 
 constexpr uint8_t CHAMBER_WIDTH = 110;
 constexpr uint8_t WEIGHT_DIAMETER = 34;
-constexpr uint8_t CALIBRATION_SAMPLES = 20;
+constexpr uint8_t CALIBRATION_SAMPLES = 100;
 constexpr uint8_t MAX_DISPLACEMENT = (CHAMBER_WIDTH - WEIGHT_DIAMETER) / 2;
 uint8_t x_calibrated_center = CHAMBER_WIDTH / 2;
 uint8_t y_calibrated_center = CHAMBER_WIDTH / 2;
-
-// WindowedMean mean_x(EVENT_WINDOW_SIZE, PRIMED_VALUE);
-// WindowedMean mean_y(EVENT_WINDOW_SIZE, PRIMED_VALUE);
 
 ZScore zscore_x(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
 ZScore zscore_y(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
@@ -122,8 +120,8 @@ void read_dual_sensors() {
 
   float x_led_pos = (x_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
   float y_led_pos = (y_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
-  // Serial.print("min:40.0 max:60.0 ");
 
+  // Serial.print("min:40.0 max:60.0 ");
   // Serial.print("X:");
   // Serial.print(zscore_x.mean());  
   // Serial.print(" Y:");
@@ -161,31 +159,17 @@ void calibrate() {
   uint16_t x_sum = 0;
   uint16_t y_sum = 0;
 
-  bool x_ok = false;
-  bool y_ok = false;
-
   for (int i = 0; i < CALIBRATION_SAMPLES; ) {
     x_led_on(true);
-    lox1.rangingTest(&measureY, false);
-    if(measureX.RangeStatus != 4) {
-      x_sum += measureX.RangeMilliMeter;
-      x_ok = true;
-    } else {
-      x_ok = false;
-    }
+    lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
     x_led_on(false);
-    
     y_led_on(true);
-    lox2.rangingTest(&measureX, false);
-    if(measureY.RangeStatus != 4) {
-      y_sum +=measureY.RangeMilliMeter;
-      y_ok = true;
-    } else {
-      y_ok = false;
-    }
+    lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
     y_led_on(false);
 
-    if(x_ok && y_ok){
+    if(measureX.RangeStatus != 4 || measureY.RangeStatus != 4){
+      x_sum += measureX.RangeMilliMeter;
+      y_sum += measureY.RangeMilliMeter;
       i++;
     }
   }
@@ -199,14 +183,13 @@ void calibrate() {
   Serial.print(" Y:");
   Serial.print(y_calibrated_center);
 
-  delay(5000);
+  delay(2000);
 }
 
 
 void setup() {
   Serial.begin(115200);
 
-  // wait until serial port opens for native USB devices
   while (! Serial) { delay(1); }
 
   Wire.begin();
@@ -216,24 +199,12 @@ void setup() {
   pinMode(SHT_LOX2, OUTPUT);
 
   pinMode(SLEEP_PIN, INPUT_PULLUP);
-
-  // Serial.println(F("Shutdown pins inited..."));
+  sleep();  
 
   digitalWrite(SHT_LOX1, LOW);
   digitalWrite(SHT_LOX2, LOW);
 
-  // Serial.println(F("Both in reset mode...(pins are low)"));
-  
-  
-  // Serial.println(F("Starting..."));
   setID();
-
-  // Explicit high-speed call for Adafruit's library
-  // 20000 microseconds = 20ms timing budget
-  lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
-  lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
-
-  sleep();  
 
   pinMode(X_LED_PIN, OUTPUT);
   pinMode(Y_LED_PIN, OUTPUT);
@@ -244,8 +215,13 @@ void setup() {
   digitalWrite(Y_LED_PIN, HIGH);
   delay(500);
 
+  lox1.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
+  lox2.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
+
   calibrate();
 
+  lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
+  lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
 }
 
 void loop() {

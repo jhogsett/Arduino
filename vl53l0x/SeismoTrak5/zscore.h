@@ -45,7 +45,7 @@ public:
     if(event_score < _event_threshold){
       float mad_baseline = _pmad_baseline->sample(mad_event);
 
-      // ensure the new baseline accounts for the noise float
+      // ensure the new baseline accounts for the noise floor
       if(mad_baseline < _noise_floor){
         mad_baseline = _noise_floor;
       }
@@ -66,8 +66,6 @@ public:
       // Trip the "Event Triggered" trap if it isn't already tripped
       _event_triggered = true; 
     }
-
-    // --- NEW TRIGGER AND LATCH LOGIC ---
 
     if (event_score >= _event_threshold) {
         // Maintain the "Currently Happening" state
