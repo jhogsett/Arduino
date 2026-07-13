@@ -22,11 +22,14 @@ constexpr uint8_t SLEEP_PIN = A0;
 constexpr uint16_t SLEEP_TIME = 10000;
 constexpr uint32_t TIME_BUDGET = 100000;
 
-constexpr uint16_t EVENT_WINDOW_SIZE = 25;
-constexpr uint16_t BASELINE_WINDOW_SIZE = 300;
+constexpr uint16_t EVENT_WINDOW_SIZE = 20;
+constexpr uint16_t BASELINE_WINDOW_SIZE = 100;
 constexpr uint16_t PRIMED_VALUE = 50;
-constexpr float NOISE_FLOOR = 2.0;
+constexpr float NOISE_FLOOR = 1.0;
 constexpr float EVENT_THRESHOLD = 2.0;
+
+constexpr uint8_t X_LED_PIN = 2;
+constexpr uint8_t Y_LED_PIN = 3;
 
 // WindowedMean mean_x(EVENT_WINDOW_SIZE, PRIMED_VALUE);
 // WindowedMean mean_y(EVENT_WINDOW_SIZE, PRIMED_VALUE);
@@ -74,6 +77,14 @@ void setID() {
   }
 }
 
+void x_led_on(bool on = true){
+  digitalWrite(X_LED_PIN, on ? LOW : HIGH);
+}
+
+void y_led_on(bool on = true){
+  digitalWrite(Y_LED_PIN, on ? LOW : HIGH);
+}
+
 void read_dual_sensors() {
   
   lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
@@ -91,10 +102,10 @@ void read_dual_sensors() {
 
   // Serial.print("min:40.0 max:60.0 ");
 
-  Serial.print("X:");
-  Serial.print(zscore_x.mean());  
-  Serial.print(" Y:");
-  Serial.print(zscore_y.mean());  
+  // Serial.print("X:");
+  // Serial.print(zscore_x.mean());  
+  // Serial.print(" Y:");
+  // Serial.print(zscore_y.mean());  
   Serial.print(" XB:");
   Serial.print(zscore_x.baseline_score());  
   Serial.print(" YB:");
@@ -103,11 +114,14 @@ void read_dual_sensors() {
   Serial.print(zscore_x.sample_score());  
   Serial.print(" YS:");
   Serial.print(zscore_y.sample_score());  
-  Serial.print(" ET:");
-  Serial.print(zscore_x.get_event_triggered() ? 100 : 0);  
-  Serial.print(" EA:");
-  Serial.print(zscore_x.is_event_active() ? 100 : 0);  
+  // Serial.print(" ET:");
+  // Serial.print(zscore_x.get_event_triggered() ? 100 : 0);  
+  // Serial.print(" EA:");
+  // Serial.print(zscore_x.is_event_active() ? 100 : 0);  
   Serial.println();
+
+  x_led_on(zscore_x.is_event_active());
+  y_led_on(zscore_y.is_event_active());
 }
 
 void sleep(){
@@ -144,8 +158,18 @@ void setup() {
   lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
   lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
 
+  pinMode(X_LED_PIN, OUTPUT);
+  pinMode(Y_LED_PIN, OUTPUT);
+  digitalWrite(X_LED_PIN, LOW);
+  digitalWrite(Y_LED_PIN, LOW);
+  delay(500);
+  digitalWrite(X_LED_PIN, HIGH);
+  digitalWrite(Y_LED_PIN, HIGH);
+
   // Serial.println("\"X\",\"Y\"");
   sleep();  
+
+
 }
 
 void loop() {
