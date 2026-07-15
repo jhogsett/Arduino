@@ -7,8 +7,8 @@
 #define LOX2_ADDRESS 0x31
 
 // set the pins to shutdown
-#define SHT_LOX1 5
-#define SHT_LOX2 6
+#define SHT_LOX1 6
+#define SHT_LOX2 7
 
 // objects for the vl53l0x
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
@@ -28,9 +28,13 @@ constexpr uint16_t BASELINE_WINDOW_SIZE = 300;
 constexpr uint16_t PRIMED_VALUE = 45;
 constexpr float NOISE_FLOOR = 1.0;
 constexpr float EVENT_THRESHOLD = 1.5;
+constexpr uint32_t ALARM_RESET_MS = 20000;
 
-constexpr uint8_t X_LED_PIN = 2;
-constexpr uint8_t Y_LED_PIN = 3;
+constexpr uint8_t EVENT_LED_PIN = 2;
+constexpr uint8_t ALARM_LED_PIN = 3;
+constexpr uint8_t ACTIVITY_LED_PIN = 2;
+constexpr uint8_t ALARM_RESET_PIN = 4;
+constexpr uint8_t ALARM_SIREN_PIN = 5;
 
 constexpr uint8_t CHAMBER_WIDTH = 110;
 constexpr uint8_t WEIGHT_DIAMETER = 34;
@@ -38,6 +42,9 @@ constexpr uint8_t CALIBRATION_SAMPLES = 100;
 constexpr uint8_t MAX_DISPLACEMENT = (CHAMBER_WIDTH - WEIGHT_DIAMETER) / 2;
 uint8_t x_calibrated_center = CHAMBER_WIDTH / 2;
 uint8_t y_calibrated_center = CHAMBER_WIDTH / 2;
+uint32_t event_start_time = 0;
+bool alarm_active = false;
+bool alarm_suppressed = false;
 
 ZScore zscore_x(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
 ZScore zscore_y(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
@@ -82,17 +89,34 @@ void setID() {
   }
 }
 
-void x_led_on(bool on = true){
-  digitalWrite(X_LED_PIN, on ? LOW : HIGH);
+void event_led_on(bool on = true){
+  digitalWrite(EVENT_LED_PIN, on ? LOW : HIGH);
 }
 
-void y_led_on(bool on = true){
-  digitalWrite(Y_LED_PIN, on ? LOW : HIGH);
+void alarm_led_on(bool on = true){
+  digitalWrite(ALARM_LED_PIN, on ? LOW : HIGH);
+}
+
+void alarm_siren_on(bool on = true){
+  digitalWrite(ALARM_SIREN_PIN, on ? HIGH : LOW);
+}
+
+void alarm_reset(){
+  if(alarm_active && digitalRead(ALARM_RESET_PIN) == LOW){
+    Serial.println("Alarm Suppressed");
+    // alarm_active = false;
+    alarm_suppressed = true;
+    alarm_led_on(false);
+    alarm_siren_on(false);
+  }
 }
 
 void read_dual_sensors() {
+
+  // digitalWrite(ACTIVITY_LED_PIN, LOW);
   lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
   lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
+  // digitalWrite(ACTIVITY_LED_PIN, HIGH);
 
   if(measureX.RangeStatus == 4 || measureY.RangeStatus == 4){
     // one or both values is out of range; skip this sample round
@@ -108,28 +132,31 @@ void read_dual_sensors() {
   current_y = measureY.RangeMilliMeter;
   zscore_y.sample(current_y);
 
-  int16_t x_displacement = current_x - x_calibrated_center;
-  int16_t y_displacement = current_y - y_calibrated_center;
-  // int16_t x_displacement = zscore_x.mean() - x_calibrated_center;
-  // int16_t y_displacement = zscore_y.mean() - y_calibrated_center;
+  // int16_t x_displacement = current_x - x_calibrated_center;
+  // int16_t y_displacement = current_y - y_calibrated_center;
+  // // int16_t x_displacement = zscore_x.mean() - x_calibrated_center;
+  // // int16_t y_displacement = zscore_y.mean() - y_calibrated_center;
 
-  if (x_displacement > MAX_DISPLACEMENT)  x_displacement = MAX_DISPLACEMENT;
-  if (x_displacement < -MAX_DISPLACEMENT) x_displacement = -MAX_DISPLACEMENT;
-  if (y_displacement > MAX_DISPLACEMENT)  y_displacement = MAX_DISPLACEMENT;
-  if (y_displacement < -MAX_DISPLACEMENT) y_displacement = -MAX_DISPLACEMENT;
+  // if (x_displacement > MAX_DISPLACEMENT)  x_displacement = MAX_DISPLACEMENT;
+  // if (x_displacement < -MAX_DISPLACEMENT) x_displacement = -MAX_DISPLACEMENT;
+  // if (y_displacement > MAX_DISPLACEMENT)  y_displacement = MAX_DISPLACEMENT;
+  // if (y_displacement < -MAX_DISPLACEMENT) y_displacement = -MAX_DISPLACEMENT;
 
-  float x_led_pos = (x_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
-  float y_led_pos = (y_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
+  // float x_led_pos = (x_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
+  // float y_led_pos = (y_displacement + MAX_DISPLACEMENT) / (MAX_DISPLACEMENT * 2);
 
   // Serial.print("min:40.0 max:60.0 ");
   // Serial.print("X:");
   // Serial.print(zscore_x.mean());  
   // Serial.print(" Y:");
   // Serial.print(zscore_y.mean());  
-  Serial.print(" XL:");
-  Serial.print(x_displacement);
-  Serial.print(" YL:");
-  Serial.print(y_displacement);
+  // Serial.print(" XL:");
+  // Serial.print(x_displacement);
+  // Serial.print(" YL:");
+  // Serial.print(y_displacement);
+
+  digitalWrite(ACTIVITY_LED_PIN, LOW);
+
   Serial.print(" XB:");
   Serial.print(zscore_x.baseline_score());  
   Serial.print(" YB:");
@@ -144,8 +171,32 @@ void read_dual_sensors() {
   // Serial.print(zscore_x.is_event_active() ? 100 : 0);  
   Serial.println();
 
-  x_led_on(zscore_x.is_event_active());
-  y_led_on(zscore_y.is_event_active());
+  digitalWrite(ACTIVITY_LED_PIN, HIGH);
+
+  bool event_active = zscore_x.is_event_active() || zscore_y.is_event_active();
+
+  event_led_on(event_active);
+
+  if(event_active){
+    event_start_time = millis();
+    if(!alarm_suppressed){
+      if(!alarm_active){
+        Serial.println("Alarm Activated");
+      }
+      alarm_active = true;
+      alarm_led_on(true);
+      alarm_siren_on(true);
+    }
+  } else if(alarm_active){
+    if(millis() - event_start_time > ALARM_RESET_MS){
+      Serial.println("Alarm Deactivated");
+      alarm_active = false;
+      alarm_suppressed = false;
+      alarm_led_on(false);
+      alarm_siren_on(false);
+    }
+  }
+
 }
 
 void sleep(){
@@ -155,36 +206,36 @@ void sleep(){
   }
 }
 
-void calibrate() {
-  uint16_t x_sum = 0;
-  uint16_t y_sum = 0;
+// void calibrate() {
+//   uint16_t x_sum = 0;
+//   uint16_t y_sum = 0;
 
-  for (int i = 0; i < CALIBRATION_SAMPLES; ) {
-    x_led_on(true);
-    lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
-    x_led_on(false);
-    y_led_on(true);
-    lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
-    y_led_on(false);
+//   for (int i = 0; i < CALIBRATION_SAMPLES; ) {
+//     event_led_on(true);
+//     lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
+//     event_led_on(false);
+//     alarm_led_on(true);
+//     lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
+//     alarm_led_on(false);
 
-    if(measureX.RangeStatus != 4 || measureY.RangeStatus != 4){
-      x_sum += measureX.RangeMilliMeter;
-      y_sum += measureY.RangeMilliMeter;
-      i++;
-    }
-  }
+//     if(measureX.RangeStatus != 4 || measureY.RangeStatus != 4){
+//       x_sum += measureX.RangeMilliMeter;
+//       y_sum += measureY.RangeMilliMeter;
+//       i++;
+//     }
+//   }
 
-  x_calibrated_center = x_sum / CALIBRATION_SAMPLES;
-  y_calibrated_center = y_sum / CALIBRATION_SAMPLES;
+//   x_calibrated_center = x_sum / CALIBRATION_SAMPLES;
+//   y_calibrated_center = y_sum / CALIBRATION_SAMPLES;
 
-  Serial.print("Calibrated Center Point ");
-  Serial.print("X:");
-  Serial.print(x_calibrated_center);
-  Serial.print(" Y:");
-  Serial.print(y_calibrated_center);
+//   Serial.print("Calibrated Center Point ");
+//   Serial.print("X:");
+//   Serial.print(x_calibrated_center);
+//   Serial.print(" Y:");
+//   Serial.println(y_calibrated_center);
 
-  delay(2000);
-}
+//   delay(2000);
+// }
 
 
 void setup() {
@@ -197,28 +248,34 @@ void setup() {
 
   pinMode(SHT_LOX1, OUTPUT);
   pinMode(SHT_LOX2, OUTPUT);
-
-  pinMode(SLEEP_PIN, INPUT_PULLUP);
-  sleep();  
-
   digitalWrite(SHT_LOX1, LOW);
   digitalWrite(SHT_LOX2, LOW);
 
   setID();
 
-  pinMode(X_LED_PIN, OUTPUT);
-  pinMode(Y_LED_PIN, OUTPUT);
-  digitalWrite(X_LED_PIN, LOW);
-  digitalWrite(Y_LED_PIN, LOW);
-  delay(500);
-  digitalWrite(X_LED_PIN, HIGH);
-  digitalWrite(Y_LED_PIN, HIGH);
-  delay(500);
+  pinMode(SLEEP_PIN, INPUT_PULLUP);
 
-  lox1.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
-  lox2.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
+  pinMode(EVENT_LED_PIN, OUTPUT);
+  pinMode(ALARM_LED_PIN, OUTPUT);
+  digitalWrite(EVENT_LED_PIN, HIGH);
+  digitalWrite(ALARM_LED_PIN, HIGH);
 
-  calibrate();
+  pinMode(ALARM_RESET_PIN, INPUT_PULLUP);
+  pinMode(ALARM_SIREN_PIN, OUTPUT);
+  digitalWrite(ALARM_SIREN_PIN, LOW);
+
+  digitalWrite(EVENT_LED_PIN, LOW);
+  digitalWrite(ALARM_LED_PIN, LOW);
+  digitalWrite(ALARM_SIREN_PIN, HIGH);
+  delay(500);
+  digitalWrite(EVENT_LED_PIN, HIGH);
+  digitalWrite(ALARM_LED_PIN, HIGH);
+  digitalWrite(ALARM_SIREN_PIN, LOW);
+
+  // lox1.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
+  // lox2.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
+
+  // calibrate();
 
   lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
   lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
@@ -226,15 +283,6 @@ void setup() {
 
 void loop() {
   sleep();  
-
+  alarm_reset();
   read_dual_sensors();
-  // delay(10);
 }
-
-// todo
-// Use only one LED to indicate either X or Y has an event active
-// Use the other LED to indicate and event was triggered, using two timers, one to suppress it after some time, another to reset it if event no longer active for some time 
-// that second LED will be used to activate an alarm
-// have a suppress button for the alarm activation 
-// 
-// 
