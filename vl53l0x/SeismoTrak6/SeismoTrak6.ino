@@ -28,7 +28,7 @@ constexpr uint16_t BASELINE_WINDOW_SIZE = 300;
 constexpr uint16_t PRIMED_VALUE = 45;
 constexpr float NOISE_FLOOR = 1.0;
 constexpr float EVENT_THRESHOLD = 1.5;
-constexpr uint32_t ALARM_RESET_MS = 20000;
+constexpr uint32_t ALARM_RESET_MS = 30000;
 
 constexpr uint8_t EVENT_LED_PIN = 2;
 constexpr uint8_t ALARM_LED_PIN = 3;
@@ -94,7 +94,7 @@ void event_led_on(bool on = true){
 }
 
 void alarm_led_on(bool on = true){
-  digitalWrite(ALARM_LED_PIN, on ? LOW : HIGH);
+  digitalWrite(ALARM_LED_PIN, on ? HIGH : LOW);
 }
 
 void alarm_siren_on(bool on = true){
@@ -157,14 +157,14 @@ void read_dual_sensors() {
 
   digitalWrite(ACTIVITY_LED_PIN, LOW);
 
-  Serial.print(" XB:");
-  Serial.print(zscore_x.baseline_score());  
-  Serial.print(" YB:");
-  Serial.print(zscore_y.baseline_score());  
-  Serial.print(" XS:");
-  Serial.print(zscore_x.sample_score());  
-  Serial.print(" YS:");
-  Serial.print(zscore_y.sample_score());  
+  // Serial.print(" XB:");
+  // Serial.print(zscore_x.baseline_score());  
+  // Serial.print(" YB:");
+  // Serial.print(zscore_y.baseline_score());  
+  // Serial.print(" XS:");
+  // Serial.print(zscore_x.sample_score());  
+  // Serial.print(" YS:");
+  // Serial.print(zscore_y.sample_score());  
   // Serial.print(" ET:");
   // Serial.print(zscore_x.get_event_triggered() ? 100 : 0);  
   // Serial.print(" EA:");
@@ -258,18 +258,18 @@ void setup() {
   pinMode(EVENT_LED_PIN, OUTPUT);
   pinMode(ALARM_LED_PIN, OUTPUT);
   digitalWrite(EVENT_LED_PIN, HIGH);
-  digitalWrite(ALARM_LED_PIN, HIGH);
+  digitalWrite(ALARM_LED_PIN, LOW);
 
   pinMode(ALARM_RESET_PIN, INPUT_PULLUP);
   pinMode(ALARM_SIREN_PIN, OUTPUT);
   digitalWrite(ALARM_SIREN_PIN, LOW);
 
   digitalWrite(EVENT_LED_PIN, LOW);
-  digitalWrite(ALARM_LED_PIN, LOW);
+  digitalWrite(ALARM_LED_PIN, HIGH);
   digitalWrite(ALARM_SIREN_PIN, HIGH);
   delay(500);
   digitalWrite(EVENT_LED_PIN, HIGH);
-  digitalWrite(ALARM_LED_PIN, HIGH);
+  digitalWrite(ALARM_LED_PIN, LOW);
   digitalWrite(ALARM_SIREN_PIN, LOW);
 
   // lox1.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
@@ -279,6 +279,8 @@ void setup() {
 
   lox1.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
   lox2.setMeasurementTimingBudgetMicroSeconds(TIME_BUDGET); // 20 ms timing budget for high speed
+
+  Serial.println("Ready");
 }
 
 void loop() {
@@ -286,3 +288,9 @@ void loop() {
   alarm_reset();
   read_dual_sensors();
 }
+
+
+// TODO: 
+// add neopixel library, pin, and dynamic active alarm sound
+// add mosfet switch for alarm siren
+// perf board
