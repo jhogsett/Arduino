@@ -19,7 +19,6 @@ VL53L0X_RangingMeasurementData_t measureX;
 VL53L0X_RangingMeasurementData_t measureY;
 
 constexpr uint8_t SLEEP_PIN = A0;
-// constexpr uint16_t SLEEP_TIME = 10000;
 constexpr uint32_t TIME_BUDGET = 100000;
 constexpr uint32_t CAL_TIME_BUDGET = 200000;
 
@@ -113,10 +112,13 @@ void alarm_reset(){
 
 void read_dual_sensors() {
 
-  // digitalWrite(ACTIVITY_LED_PIN, LOW);
   lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
+
+  digitalWrite(ACTIVITY_LED_PIN, LOW);
+
   lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
-  // digitalWrite(ACTIVITY_LED_PIN, HIGH);
+
+  digitalWrite(ACTIVITY_LED_PIN, HIGH);
 
   if(measureX.RangeStatus == 4 || measureY.RangeStatus == 4){
     // one or both values is out of range; skip this sample round
@@ -169,7 +171,7 @@ void read_dual_sensors() {
   // Serial.print(zscore_x.get_event_triggered() ? 100 : 0);  
   // Serial.print(" EA:");
   // Serial.print(zscore_x.is_event_active() ? 100 : 0);  
-  Serial.println();
+  // Serial.println();
 
   digitalWrite(ACTIVITY_LED_PIN, HIGH);
 
