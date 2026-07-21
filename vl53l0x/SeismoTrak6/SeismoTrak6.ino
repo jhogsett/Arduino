@@ -35,15 +35,20 @@ constexpr uint8_t ACTIVITY_LED_PIN = 2;
 constexpr uint8_t ALARM_RESET_PIN = 4;
 constexpr uint8_t ALARM_SIREN_PIN = 5;
 
-constexpr uint8_t CHAMBER_WIDTH = 110;
-constexpr uint8_t WEIGHT_DIAMETER = 34;
-constexpr uint8_t CALIBRATION_SAMPLES = 100;
-constexpr uint8_t MAX_DISPLACEMENT = (CHAMBER_WIDTH - WEIGHT_DIAMETER) / 2;
-uint8_t x_calibrated_center = CHAMBER_WIDTH / 2;
-uint8_t y_calibrated_center = CHAMBER_WIDTH / 2;
+// constexpr uint8_t CHAMBER_WIDTH = 110;
+// constexpr uint8_t WEIGHT_DIAMETER = 34;
+// constexpr uint8_t CALIBRATION_SAMPLES = 100;
+// constexpr uint8_t MAX_DISPLACEMENT = (CHAMBER_WIDTH - WEIGHT_DIAMETER) / 2;
+// uint8_t x_calibrated_center = CHAMBER_WIDTH / 2;
+// uint8_t y_calibrated_center = CHAMBER_WIDTH / 2;
+
+constexpr uint8_t ACTIVITY_LED_FILTER = 10;
+uint8_t activity_led_iter = 0;
+
 uint32_t event_start_time = 0;
 bool alarm_active = false;
 bool alarm_suppressed = false;
+
 
 ZScore zscore_x(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
 ZScore zscore_y(EVENT_WINDOW_SIZE, BASELINE_WINDOW_SIZE, PRIMED_VALUE, NOISE_FLOOR, EVENT_THRESHOLD);
@@ -105,7 +110,7 @@ void alarm_reset(){
     Serial.println("Alarm Suppressed");
     // alarm_active = false;
     alarm_suppressed = true;
-    alarm_led_on(false);
+    // alarm_led_on(false);
     alarm_siren_on(false);
   }
 }
@@ -114,11 +119,16 @@ void read_dual_sensors() {
 
   lox1.rangingTest(&measureY, false); // pass in 'true' to get debug data printout!
 
-  digitalWrite(ACTIVITY_LED_PIN, LOW);
+  activity_led_iter = ++activity_led_iter % ACTIVITY_LED_FILTER; 
+  if(activity_led_iter == 0){
+    // digitalWrite(ACTIVITY_LED_PIN, LOW);
+    event_led_on(true);
+  }
 
   lox2.rangingTest(&measureX, false); // pass in 'true' to get debug data printout!
 
-  digitalWrite(ACTIVITY_LED_PIN, HIGH);
+  // digitalWrite(ACTIVITY_LED_PIN, HIGH);
+    event_led_on(false);
 
   if(measureX.RangeStatus == 4 || measureY.RangeStatus == 4){
     // one or both values is out of range; skip this sample round
@@ -157,7 +167,7 @@ void read_dual_sensors() {
   // Serial.print(" YL:");
   // Serial.print(y_displacement);
 
-  digitalWrite(ACTIVITY_LED_PIN, LOW);
+  // digitalWrite(ACTIVITY_LED_PIN, LOW);
 
   // Serial.print(" XB:");
   // Serial.print(zscore_x.baseline_score());  
@@ -173,10 +183,9 @@ void read_dual_sensors() {
   // Serial.print(zscore_x.is_event_active() ? 100 : 0);  
   // Serial.println();
 
-  digitalWrite(ACTIVITY_LED_PIN, HIGH);
+  // digitalWrite(ACTIVITY_LED_PIN, HIGH);
 
   bool event_active = zscore_x.is_event_active() || zscore_y.is_event_active();
-
   event_led_on(event_active);
 
   if(event_active){
@@ -191,16 +200,20 @@ void read_dual_sensors() {
     }
   } else if(alarm_active){
     if(millis() - event_start_time > ALARM_RESET_MS){
+
       Serial.println("Alarm Deactivated");
       alarm_active = false;
       alarm_suppressed = false;
       alarm_led_on(false);
       alarm_siren_on(false);
+
     }
   }
 
 }
 
+// This needed because sometimes the Arduino Nano Every woke accept 
+// programming while the event loop is running
 void sleep(){
   if(digitalRead(SLEEP_PIN) == LOW){
     Serial.println("Enter sleep mode");
@@ -266,13 +279,19 @@ void setup() {
   pinMode(ALARM_SIREN_PIN, OUTPUT);
   digitalWrite(ALARM_SIREN_PIN, LOW);
 
-  digitalWrite(EVENT_LED_PIN, LOW);
-  digitalWrite(ALARM_LED_PIN, HIGH);
-  digitalWrite(ALARM_SIREN_PIN, HIGH);
+  // digitalWrite(EVENT_LED_PIN, LOW);
+  // digitalWrite(ALARM_LED_PIN, HIGH);
+  // digitalWrite(ALARM_SIREN_PIN, HIGH);
+  event_led_on(true);
+  alarm_led_on(true);
+  alarm_siren_on(true);
   delay(500);
-  digitalWrite(EVENT_LED_PIN, HIGH);
-  digitalWrite(ALARM_LED_PIN, LOW);
-  digitalWrite(ALARM_SIREN_PIN, LOW);
+  // digitalWrite(EVENT_LED_PIN, HIGH);
+  // digitalWrite(ALARM_LED_PIN, LOW);
+  // digitalWrite(ALARM_SIREN_PIN, LOW);
+  event_led_on(false);
+  alarm_led_on(false);
+  alarm_siren_on(false);
 
   // lox1.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
   // lox2.setMeasurementTimingBudgetMicroSeconds(CAL_TIME_BUDGET); // 20 ms timing budget for high speed
