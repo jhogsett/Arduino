@@ -16,14 +16,22 @@
 #define PAIR1
 // #define PAIR2
 
+// range finder/counter unit
 #ifdef PAIR1
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 #endif
 
+// temp display #1 garage
 #ifdef PAIR2
 #define CLIENT_ADDRESS 3
 #define SERVER_ADDRESS 4
+#endif
+
+// temp display #2 backroom or shed
+#ifdef PAIR3
+#define CLIENT_ADDRESS 5
+#define SERVER_ADDRESS 6
 #endif
 
 #define DATARATE 480
