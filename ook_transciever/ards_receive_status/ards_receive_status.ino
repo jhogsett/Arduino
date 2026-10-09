@@ -295,45 +295,82 @@ void loop()
       }
     }
   }
-  
-  // // Check for stale data and update display accordingly
-  // if(hasReceivedData){
-  //   unsigned long currentTime = millis();
-  //   unsigned long timeSinceLastData = currentTime - lastDataTime;
+
+  bool warning_shown = false;
+  uint32_t last_warning_time = 0;
+  #define WARNING_PERIOD (1000UL * 60UL)
+
+  // Check for stale data and update display accordingly
+  if(hasReceivedData){
+    // unsigned long currentTime = millis();
+    unsigned long timeSinceLastData = millis() - lastDataTime;
     
-  //   // Handle millis() rollover (happens every ~49 days)
-  //   if(currentTime < lastDataTime){
-  //     timeSinceLastData = currentTime + (0xFFFFFFFF - lastDataTime);
-  //   }
+    // // Handle millis() rollover (happens every ~49 days)
+    // if(currentTime < lastDataTime){
+    //   timeSinceLastData = currentTime + (0xFFFFFFFF - lastDataTime);
+    // }
     
-  //   if(timeSinceLastData >= NO_DATA_THRESHOLD_MS){
-  //     // No data for 10+ minutes - display "NO DATA"
-  //     char noDataBuffer[30];
-  //     sprintf(noDataBuffer, "NO DATA");
+    if(timeSinceLastData >= NO_DATA_THRESHOLD_MS){
+      // No data for 10+ minutes - three long winks
+
+      if(!warning_shown){
+        for(int i = 0; i < 6; i++){
+          digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
+          delay(500);
+          delay(i < 5 ? 500 : 0);
+        }
+
+        warning_shown = true;
+        last_warning_time = millis();
+      } else {
+        if(millis() - last_warning_time > WARNING_PERIOD)
+          warning_shown = false;
+      }
+
+
+      // // No data for 10+ minutes - display "NO DATA"
+      // char noDataBuffer[30];
+      // sprintf(noDataBuffer, "NO DATA");
       
-  //     unsigned long time = millis();
-  //     if(!running1)
-  //       disp1->begin_scroll_string(noDataBuffer, 100, 100);
+      // unsigned long time = millis();
+      // if(!running1)
+      //   disp1->begin_scroll_string(noDataBuffer, 100, 100);
       
-  //     running1 = disp1->step_scroll_string(time);
+      // running1 = disp1->step_scroll_string(time);
       
-  //   } else if(timeSinceLastData >= STALE_THRESHOLD_MS){
-  //     // Data is 2+ minutes old - add "." at the end
-  //     char staleBuffer[30];
-  //     sprintf(staleBuffer, "%s.", lastBuffer);
+    } else if(timeSinceLastData >= STALE_THRESHOLD_MS){
+
+      // no data for 2+ minutes - short single wink
+
+      if(!warning_shown){
+        digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
+        delay(200);
+        digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
+
+        warning_shown = true;
+        last_warning_time = millis();
+      } else {
+        if(millis() - last_warning_time > WARNING_PERIOD)
+          warning_shown = false;
+      }
+
+
+      // Data is 2+ minutes old - add "." at the end
+      // char staleBuffer[30];
+      // sprintf(staleBuffer, "%s.", lastBuffer);
       
-  //     unsigned long time = millis();
-  //     if(!running1)
-  //       disp1->begin_scroll_string(staleBuffer, 100, 100);
+      // unsigned long time = millis();
+      // if(!running1)
+      //   disp1->begin_scroll_string(staleBuffer, 100, 100);
       
-  //     running1 = disp1->step_scroll_string(time);
-  //   } else {
-  //     // Data is fresh - display normally
-  //     unsigned long time = millis();
-  //     if(!running1)
-  //       disp1->begin_scroll_string(lastBuffer, 100, 100);
+      // running1 = disp1->step_scroll_string(time);
+    } else {
+      // // Data is fresh - display normally
+      // unsigned long time = millis();
+      // if(!running1)
+      //   disp1->begin_scroll_string(lastBuffer, 100, 100);
       
-  //     running1 = disp1->step_scroll_string(time);
-  //   }
-  // }
+      // running1 = disp1->step_scroll_string(time);
+    }
+  }
 }
