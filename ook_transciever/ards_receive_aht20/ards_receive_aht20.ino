@@ -49,10 +49,18 @@ HT16K33Disp *disp1, *disp2, *disp3;
 #define DISPLAY_BRIGHTNESS 2
 
 #define NUM_TEMP_WORDS 21
+                                        //  0       1     2      3       4     5      6       7     8      9      10     11     12     13     14     15     16     17     18    19      20
 const char *temp_words[NUM_TEMP_WORDS] = {"CRIO","ICEY","FROZ","BRRR","CHIL","COLD","COOL","POOR","MILD","OKAY","NICE","WARM","COZY","HEAT","BAKE","SEAR","FIRE","BURN","ICKY","DAMN","PYRO"};
 
-#define BASE_TEMP 32.0
-#define MAX_TEMP 132.0
+#define GREEN_COND_START 8
+#define GREEN_COND_END   10
+#define AMBER_COND_START 6
+#define AMBER_COND_END   12
+#define RED_COND_START   0
+#define RED_COND_GE    20
+
+#define BASE_TEMP 22.0
+#define MAX_TEMP 122.0
 #define DIVISION 5.0
 
 int temp_to_condition(char *buffer, const char *pattern, float temp){
@@ -67,6 +75,8 @@ int temp_to_condition(char *buffer, const char *pattern, float temp){
   sprintf(buffer, pattern, temp_words[index]);
   return index;
 }
+
+char lastBuffer[30] = "";
 
 void setup() 
 {
@@ -86,6 +96,9 @@ void setup()
   disp2 = new HT16K33Disp(0x71, 1);
   disp3 = new HT16K33Disp(0x72, 1);
   disp1->init(brightness);
+
+  sprintf(lastBuffer, "Wait  ID%d", SERVER_ADDRESS);
+  disp1->show_string(lastBuffer);
 }
  
 uint8_t data[] = "!!!";
@@ -95,7 +108,7 @@ uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
 int recvcount = 0;
 int failcount = 0;
 
-bool running1, running2, running3 = false;
+// bool running1 /*, running2, running3*/ = false;
 
 // Track last data reception time
 unsigned long lastDataTime = 0;
@@ -105,7 +118,6 @@ unsigned long lastDataTime = 0;
 float lastTemp = 0.0;
 float lastHumid = 0.0;
 float lastHeatIndex = 0.0;
-char lastBuffer[30] = "";
 bool hasReceivedData = false;
 
 void float_to_fixed(float value, char *buffer, const char *pattern, byte decimals=1){
@@ -118,6 +130,17 @@ void float_to_fixed(float value, char *buffer, const char *pattern, byte decimal
 
 // https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml
 // HI = -42.379 + 2.04901523*T + 10.14333127*RH - .22475541*T*RH - .00683783*T*T - .05481717*RH*RH + .00122874*T*T*RH + .00085282*T*RH*RH - .00000199*T*T*RH*RH
+
+// reception status states
+// initial wait for first data
+// have received data, normal
+// haven't received data in two minutes, stale
+// haven't received data in ten minutes, problem
+//
+// display states
+// initial wait for first data, display waiting, overdue, nothing etc.
+// have received data, display temperature data
+// problem receiving data, display alternatives
 
 void loop()
 {
@@ -231,25 +254,57 @@ void loop()
       //   }
       //   case 3:
       //   {
-      if(condition_index < 7 || condition_index > 12){
-        if(temp < 100.0){
-          sprintf(lastBuffer, "%4s %4s%4s", temps, indexs, condition);
-        } else {
-          sprintf(lastBuffer, "%5s%4s%4s", temps, indexs, condition);
-        }
-      } else if(condition_index < 9 || condition_index > 10){
-        if(temp < 100.0){
-          sprintf(lastBuffer, "%4s %4s%4s", temps, condition, indexs);
-        } else {
-          sprintf(lastBuffer, "%5s%4s%4s", temps, condition, indexs);
-        }
-      } else{
+
+
+#define GREEN_COND_START 8
+#define GREEN_COND_END   10
+#define AMBER_COND_START 6
+#define AMBER_COND_END   12
+#define RED_COND_START   0
+#define RED_COND_GE    20
+
+      // green condition
+      if(condition_index >= GREEN_COND_START && condition_index <= GREEN_COND_END){
         if(temp < 100.0){
           sprintf(lastBuffer, "%4s%5s%4s", condition, temps, indexs);
         } else {
           sprintf(lastBuffer, "%4s%4s %4s", condition, temps, indexs);
         }
+      } else if(condition_index >= AMBER_COND_START && condition_index <= AMBER_COND_END){
+      // amber condition
+        if(temp < 100.0){
+          sprintf(lastBuffer, "%4s %4s%4s", temps, condition, indexs);
+        } else {
+          sprintf(lastBuffer, "%5s%4s%4s", temps, condition, indexs);
+        }
+      } else {
+      // red condition
+        if(temp < 100.0){
+          sprintf(lastBuffer, "%4s %4s%4s", temps, indexs, condition);
+        } else {
+          sprintf(lastBuffer, "%5s%4s%4s", temps, indexs, condition);
+        }
       }
+
+      // if(condition_index < 8 || condition_index > 11){
+      //   if(temp < 100.0){
+      //     sprintf(lastBuffer, "%4s %4s%4s", temps, indexs, condition);
+      //   } else {
+      //     sprintf(lastBuffer, "%5s%4s%4s", temps, indexs, condition);
+      //   }
+      // } else if(condition_index < 9 || condition_index > 10){
+      //   if(temp < 100.0){
+      //     sprintf(lastBuffer, "%4s %4s%4s", temps, condition, indexs);
+      //   } else {
+      //     sprintf(lastBuffer, "%5s%4s%4s", temps, condition, indexs);
+      //   }
+      // } else{
+      //   if(temp < 100.0){
+      //     sprintf(lastBuffer, "%4s%5s%4s", condition, temps, indexs);
+      //   } else {
+      //     sprintf(lastBuffer, "%4s%4s %4s", condition, temps, indexs);
+      //   }
+      // }
         //   break;
         // }
       // }
@@ -260,10 +315,13 @@ void loop()
       lastHeatIndex = heat_index;
 
       unsigned long time = millis();
-      if(!running1)
-        disp1->begin_scroll_string(lastBuffer, 100, 100);
+      // if(!running1)
+        // disp1->begin_scroll_string(lastBuffer, 100, 100);
 
-        running1 = disp1->step_scroll_string(time);
+        // running1 = disp1->step_scroll_string(time);
+
+        disp1->show_string(lastBuffer);
+
 
       // Send a reply back to the originator client
       if (!manager.sendtoWait(data, sizeof(data), from)){
@@ -275,42 +333,49 @@ void loop()
   
   // Check for stale data and update display accordingly
   if(hasReceivedData){
-    unsigned long currentTime = millis();
-    unsigned long timeSinceLastData = currentTime - lastDataTime;
+    // unsigned long currentTime = millis();
+    unsigned long timeSinceLastData = millis() - lastDataTime;
     
-    // Handle millis() rollover (happens every ~49 days)
-    if(currentTime < lastDataTime){
-      timeSinceLastData = currentTime + (0xFFFFFFFF - lastDataTime);
-    }
+    // // Handle millis() rollover (happens every ~49 days)
+    // if(currentTime < lastDataTime){
+    //   timeSinceLastData = currentTime + (0xFFFFFFFF - lastDataTime);
+    // }
     
     if(timeSinceLastData >= NO_DATA_THRESHOLD_MS){
       // No data for 10+ minutes - display "NO DATA"
       char noDataBuffer[30];
-      sprintf(noDataBuffer, "NO DATA");
+      sprintf(noDataBuffer, " No Data 10M");
       
       unsigned long time = millis();
-      if(!running1)
-        disp1->begin_scroll_string(noDataBuffer, 100, 100);
+      // if(!running1)
+      //   disp1->begin_scroll_string(noDataBuffer, 100, 100);
       
-      running1 = disp1->step_scroll_string(time);
-      
+      // running1 = disp1->step_scroll_string(time);
+
+      disp1->show_string(noDataBuffer);
+
     } else if(timeSinceLastData >= STALE_THRESHOLD_MS){
       // Data is 2+ minutes old - add "." at the end
       char staleBuffer[30];
       sprintf(staleBuffer, "%s.", lastBuffer);
       
       unsigned long time = millis();
-      if(!running1)
-        disp1->begin_scroll_string(staleBuffer, 100, 100);
+      // if(!running1)
+      //   disp1->begin_scroll_string(staleBuffer, 100, 100);
       
-      running1 = disp1->step_scroll_string(time);
+      // running1 = disp1->step_scroll_string(time);
+
+      disp1->show_string(staleBuffer);
+
     } else {
       // Data is fresh - display normally
-      unsigned long time = millis();
-      if(!running1)
-        disp1->begin_scroll_string(lastBuffer, 100, 100);
+
+      // was already displayed above, is this redundant?
+      // unsigned long time = millis();
+      // if(!running1)
+      //   disp1->begin_scroll_string(lastBuffer, 100, 100);
       
-      running1 = disp1->step_scroll_string(time);
+      // running1 = disp1->step_scroll_string(time);
     }
   }
 }
