@@ -124,6 +124,11 @@ unsigned long lastDataTime = 0;
 
 // char lastBuffer[30] = "";
 bool hasReceivedData = false;
+bool warning_shown = false;
+uint32_t last_warning_time = 0;
+
+#define WAITING_PERIOD (1000UL * 1UL)
+#define WARNING_PERIOD (1000UL * 10UL)
 
 // void float_to_fixed(float value, char *buffer, const char *pattern, byte decimals=1){
 //   int split = 10 * decimals;
@@ -296,9 +301,6 @@ void loop()
     }
   }
 
-  bool warning_shown = false;
-  uint32_t last_warning_time = 0;
-  #define WARNING_PERIOD (1000UL * 60UL)
 
   // Check for stale data and update display accordingly
   if(hasReceivedData){
@@ -311,17 +313,22 @@ void loop()
     // }
     
     if(timeSinceLastData >= NO_DATA_THRESHOLD_MS){
+      // Serial.println("No Data 10M");
+
       // No data for 10+ minutes - three long winks
 
       if(!warning_shown){
+        Serial.println("No Data Warning");
+
         for(int i = 0; i < 6; i++){
           digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
-          delay(500);
+          // delay(500);
+          // digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
           delay(i < 5 ? 500 : 0);
         }
 
-        warning_shown = true;
         last_warning_time = millis();
+        warning_shown = true;
       } else {
         if(millis() - last_warning_time > WARNING_PERIOD)
           warning_shown = false;
@@ -339,10 +346,12 @@ void loop()
       // running1 = disp1->step_scroll_string(time);
       
     } else if(timeSinceLastData >= STALE_THRESHOLD_MS){
+      // Serial.println("No Data 2M");
 
       // no data for 2+ minutes - short single wink
 
       if(!warning_shown){
+        Serial.println("Stale Warning");
         digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
         delay(200);
         digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
@@ -371,6 +380,20 @@ void loop()
       //   disp1->begin_scroll_string(lastBuffer, 100, 100);
       
       // running1 = disp1->step_scroll_string(time);
+    }
+  } else {
+    // no data received yet
+
+    if(!warning_shown){
+      Serial.println("Waiting for data");
+
+      digitalWrite(STATUS_PIN, !digitalRead(STATUS_PIN));
+
+      last_warning_time = millis();
+      warning_shown = true;
+    } else {
+      if(millis() - last_warning_time > WAITING_PERIOD)
+        warning_shown = false;
     }
   }
 }
